@@ -3582,36 +3582,27 @@ static ssize_t flush_set(struct device *dev, struct device_attribute *attr,
 		return rc;
 	}
 
-	I("%s++: handle = %lu\n", __func__, handle);
+	D("%s: handle = %lu\n", __func__, handle);
 
 	data = handle;
 
 	if ((handle == CW_SIGNIFICANT_MOTION) ||(handle == CW_PROXIMITY)) {
-		I("%s: Before mcu_data->lock\n", __func__);
 		mutex_lock(&mcu_data->lock);
-		I("%s: Get mcu_data->lock\n", __func__);
 		cwmcu_send_flush(mcu_data, handle);
 		mutex_unlock(&mcu_data->lock);
-		I("%s: Release mcu_data->lock\n", __func__);
 	} else {
-		I("%s: addr = 0x%x, data = 0x%x\n", __func__,
-		  CWSTM32_BATCH_FLUSH, data);
+		D("%s: addr = 0x%x, data = 0x%x\n", __func__, CWSTM32_BATCH_FLUSH, data);
 
-		rc = CWMCU_i2c_write_power(mcu_data, CWSTM32_BATCH_FLUSH, &data,
-					   1);
+		rc = CWMCU_i2c_write_power(mcu_data, CWSTM32_BATCH_FLUSH, &data, 1);
 		if (rc)
 			E("%s: CWMCU_i2c_write fails, rc = %d\n", __func__, rc);
 
 		mcu_data->pending_flush |= (1LL << handle);
-		I("%s: mcu_data->pending_flush = 0x%llx\n", __func__,
-		  mcu_data->pending_flush);
+		D("%s: mcu_data->pending_flush = 0x%llx\n", __func__, mcu_data->pending_flush);
 	}
 
 	mcu_data->w_flush_fifo = true;
 	queue_work(mcu_data->mcu_wq, &mcu_data->one_shot_work);
-
-	I("%s--: mcu_data->pending_flush = 0x%llx\n", __func__,
-	  mcu_data->pending_flush);
 
 	return count;
 }

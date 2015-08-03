@@ -9493,14 +9493,14 @@ user_triger_write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 {
 	int ret = 0;
 	int record_slot = 0;
-	char filename[64] = {0};
-	struct file *fp_dumpfile = NULL;
+	char filename[64];
+	struct file *fp_dumpfile;
 	mm_segment_t old_fs;
 	loff_t pos = 0;
 	struct timespec ts;
 	struct rtc_time tm;
 	char *memblock = NULL;
-	char recordtime[64] = {0};
+	char recordtime[64];
 	int fwtrigger = 0;
 	getnstimeofday(&ts);
 	ts.tv_sec -= sys_tz.tz_minuteswest * 60;
@@ -9540,8 +9540,6 @@ user_triger_write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 		DHD_ERROR(("%s : dump save filename[%s]\n ", __FUNCTION__, filename));
 	} else {
 		DHD_ERROR(("%s parse_timetag error return\n ", __FUNCTION__));
-		ret = -1;
-		goto exit;
 	}
 	fp_dumpfile = filp_open(filename, O_WRONLY|O_CREAT, 0666);
 	if (!fp_dumpfile) {
@@ -9579,17 +9577,17 @@ int
 write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 {
 	int ret = 0;
-	struct file *fp = NULL;
+	struct file *fp;
 	mm_segment_t old_fs;
 	loff_t pos = 0;
 #ifdef CUSTOMER_HW_ONE
 	struct timespec ts;
 	struct rtc_time tm;
 	char *memblock = NULL;
-	char recordtime[64] = {0};
+	char recordtime[64];
 	int fwtrigger = 1;
 	int record_slot = 0;
-	char filename[64] = {0};
+	char filename[64];
 
 	getnstimeofday(&ts);
 	ts.tv_sec -= sys_tz.tz_minuteswest * 60;
@@ -9622,7 +9620,6 @@ write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 			FW_RAMDUMP_PATH"fwdumpfile%d", record_slot);
 	} else {
 		DHD_ERROR(("%s parse_timetag error return\n ", __FUNCTION__));
-		ret = -1;
 		goto exit;
 	}
 	fp = filp_open(filename, O_WRONLY|O_CREAT, 0666);
