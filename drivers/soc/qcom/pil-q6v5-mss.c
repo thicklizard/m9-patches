@@ -35,6 +35,8 @@
 #include <soc/qcom/smem.h>
 #include <soc/qcom/smsm.h>
 
+#include <soc/qcom/scm.h>
+
 #include "peripheral-loader.h"
 #include "pil-q6v5.h"
 #include "pil-msa.h"
@@ -49,6 +51,38 @@
 #if defined(CONFIG_HTC_DEBUG_SSR)
 int skip_ssr_on_fatal = 0;
 #endif
+
+struct workqueue_struct *dump_snoc_wq;
+static void dump_snoc_process(struct work_struct *work);
+static DECLARE_WORK(dump_snoc_work, dump_snoc_process);
+
+static void dump_snoc_process(struct work_struct *work)
+{
+	int ret, response;
+	struct {
+		unsigned int config;
+		unsigned int spare;
+	} cmd;
+	struct scm_desc desc = {0};
+
+	desc.arginfo = SCM_ARGS(2);
+	desc.args[0] = cmd.config = 0xA;	 
+	desc.args[1] = cmd.spare = 0;
+
+	if (!is_scm_armv8())
+		ret = scm_call(SCM_SVC_MP, 0xe, &cmd, sizeof(cmd),
+				&response, sizeof(response));
+	else
+		ret = scm_call2(SCM_SIP_FNID(SCM_SVC_MP, 0xe), &desc);
+
+	if (ret != 0)
+		pr_warn("Failed to dump_snoc_syndrome_register: %d\n",
+			ret);
+	else
+		pr_info("dump_snoc_syndrome_register ...\n");
+
+	return ;
+}
 
 #if defined(CONFIG_HTC_DEBUG_SSR)
 static void log_modem_sfr(struct subsys_device *dev)
@@ -108,6 +142,19 @@ static void restart_modem(struct modem_data *drv)
 #endif
 }
 
+#if defined(CONFIG_HTC_DEBUG_RIL_PCN0002_DUMP_STACK)
+static void dump_dbg_info(void)
+{
+
+	printk(KERN_INFO "=== Show rmt_storage ===");
+	show_thread_group_state_filter("rmt_storage", 0);
+	printk(KERN_INFO "\n");
+
+	pr_info("### Show Blocked State in ###\n");
+	show_state_filter(TASK_UNINTERRUPTIBLE);
+}
+#endif
+
 static irqreturn_t modem_err_fatal_intr_handler(int irq, void *dev_id)
 {
 	struct modem_data *drv = subsys_to_drv(dev_id);
@@ -117,6 +164,13 @@ static irqreturn_t modem_err_fatal_intr_handler(int irq, void *dev_id)
 		return IRQ_HANDLED;
 
 	pr_err("Fatal error on the modem.\n");
+
+#if defined(CONFIG_HTC_DEBUG_RIL_PCN0002_DUMP_STACK)
+	dump_dbg_info();
+#endif
+
+	queue_work(dump_snoc_wq, &dump_snoc_work);
+
 	subsys_set_crash_status(drv->subsys, true);
 	restart_modem(drv);
 	return IRQ_HANDLED;
@@ -432,6 +486,10 @@ static int pil_mss_driver_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 	}
+
+	
+	dump_snoc_wq = create_singlethread_workqueue("dump_snoc_work");
+
 	init_completion(&drv->stop_ack);
 
 	return pil_subsys_init(drv, pdev);
@@ -444,6 +502,9 @@ static int pil_mss_driver_exit(struct platform_device *pdev)
 	subsys_unregister(drv->subsys);
 	destroy_ramdump_device(drv->ramdump_dev);
 	pil_desc_release(&drv->q6->desc);
+
+	destroy_workqueue(dump_snoc_wq);
+
 	return 0;
 }
 
