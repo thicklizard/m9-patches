@@ -171,7 +171,7 @@ static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 
 static unsigned int bl_to_brightness(int val, int brt_dim, int brt_min, int brt_def, int brt_high, int brt_extra, int brt_max)
 {
-	unsigned int  brt_val;
+	unsigned int  brt_val = 0;
 
 	if (val <= 0) {
 		brt_val = 0;

@@ -1203,7 +1203,7 @@ static void update_sram_data(struct fg_chip *chip, int *resched_ms)
 {
 	int i, rc = 0;
 	u8 reg[2];
-	s16 temp;
+	s16 temp = 0;
 	int battid_valid = fg_is_batt_id_valid(chip);
 
 	fg_stay_awake(&chip->update_sram_wakeup_source);

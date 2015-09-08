@@ -653,7 +653,7 @@ static ssize_t
 ffs_aliases_show(struct device *pdev, struct device_attribute *attr, char *buf)
 {
 	struct android_dev *dev;
-	int ret;
+	int ret = 0;
 
 	dev = list_first_entry(&android_dev_list, struct android_dev,
 					list_item);
@@ -811,7 +811,7 @@ acm_function_init(struct android_usb_function *f,
 {
 	struct acm_function_config *config;
 	struct android_dev *dev = cdev_to_android_dev(cdev);
-	char buf[128], *b, *name, *pname, *temp;
+	char buf[128], *b = 0, *name = 0, *pname = 0, *temp = 0;
 	int err = -1, i;
 
 	config = kzalloc(sizeof(struct acm_function_config), GFP_KERNEL);
@@ -1172,7 +1172,7 @@ ncm_function_bind_config(struct android_usb_function *f,
 				struct usb_configuration *c)
 {
 	struct ncm_function_config *ncm = f->config;
-	int ret;
+	int ret = 0;
 	struct eth_dev *dev;
 
 	if (!ncm) {
@@ -1844,7 +1844,7 @@ static int serial_function_init(struct android_usb_function *f,
 {
 	struct serial_function_config *config;
 	struct android_dev *dev = cdev_to_android_dev(cdev);
-	char buf[128], *b, *name, *pname, *temp;
+	char buf[128], *b =0, *name = 0, *pname = 0, *temp = 0;
 	int err = -1, i;
 
 	config = kzalloc(sizeof(struct serial_function_config), GFP_KERNEL);

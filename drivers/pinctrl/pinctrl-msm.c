@@ -832,7 +832,7 @@ static int msm_register_pinctrl(struct msm_pinctrl_dd *dd)
 static void msm_register_gpiochip(struct msm_pinctrl_dd *dd)
 {
 
-	struct gpio_chip *gc;
+	struct gpio_chip *gc = 0;
 	struct msm_pintype_info *pintype, *pinfo;
 	int i, ret = 0;
 

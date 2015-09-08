@@ -1082,4 +1082,9 @@ config INPUT_MT_WRAPPER
 
 	  If unsure, say N.
 
+config SWEEP2SLEEP
+	bool "sweep2sleep module"
+	help
+	  enable a module for sweep2sleep.
+
 endif

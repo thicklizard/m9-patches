@@ -6195,7 +6195,7 @@ static int dhd_preinit_proc(dhd_pub_t *dhd, int ifidx, char *name, char *value)
 
 static int dhd_preinit_config(dhd_pub_t *dhd, int ifidx)
 {
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = 0;
 	struct kstat stat;
 	struct file *fp = NULL;
 	unsigned int len;
@@ -9524,7 +9524,7 @@ user_triger_write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 	int record_slot = 0;
 	char filename[64] = {0};
 	struct file *fp_dumpfile = NULL;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = 0;
 	loff_t pos = 0;
 	struct timespec ts;
 	struct rtc_time tm;
@@ -9609,7 +9609,7 @@ write_to_file(dhd_pub_t *dhd, uint8 *buf, int size)
 {
 	int ret = 0;
 	struct file *fp = NULL;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs = 0;
 	loff_t pos = 0;
 #ifdef CUSTOMER_HW_ONE
 	struct timespec ts;
@@ -9707,10 +9707,10 @@ int dhd_os_wake_lock_timeout(dhd_pub_t *pub)
 #ifdef CONFIG_HAS_WAKELOCK
 		if (dhd->wakelock_rx_timeout_enable)
 			wake_lock_timeout(&dhd->wl_rxwake,
-				msecs_to_jiffies(dhd->wakelock_rx_timeout_enable));
+				msecs_to_jiffies(dhd->wakelock_rx_timeout_enable)/5);
 		if (dhd->wakelock_ctrl_timeout_enable)
 			wake_lock_timeout(&dhd->wl_ctrlwake,
-				msecs_to_jiffies(dhd->wakelock_ctrl_timeout_enable));
+				msecs_to_jiffies(dhd->wakelock_ctrl_timeout_enable)/5);
 #endif
 		dhd->wakelock_rx_timeout_enable = 0;
 		dhd->wakelock_ctrl_timeout_enable = 0;

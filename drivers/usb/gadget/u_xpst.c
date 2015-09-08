@@ -164,7 +164,7 @@ int decode_encode_hdlc(void*data, int *len, unsigned char *buf_hdlc, int remove,
 	struct diag_hdlc_dest_type enc = { NULL, NULL, 0 };
 	struct diag_hdlc_decode_type hdlc;
 	unsigned char *buf_9k = NULL;
-	int ret;
+	int ret = 0;
 
 
 	buf_9k = kzalloc(USB_MAX_OUT_BUF, GFP_KERNEL);
@@ -1243,7 +1243,7 @@ static ssize_t diag2arm9_read(struct file *fp, char __user *buf,
 	struct diag_context *ctxt = get_modem_ctxt();
 	struct usb_request *req;
 	int r = 0, xfer;
-	int ret;
+	int ret = 0;
 	DIAG_INFO("%s\n", __func__);
 	mutex_lock(&ctxt->diag2arm9_read_lock);
 

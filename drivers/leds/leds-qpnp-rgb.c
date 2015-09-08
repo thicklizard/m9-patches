@@ -1856,7 +1856,7 @@ err_config_mpp:
 static int led_multicolor_short_blink(struct qpnp_led_data *led, int pwm_coefficient){
 	int rc = 0;
 	struct lut_params	lut_params;
-	int *lut_short_blink;
+	int *lut_short_blink = 0;
 	LED_INFO("%s, name:%s, brightness = %d status: %d\n", __func__, led->cdev.name, led->cdev.brightness, led->status);
 
 	lut_params.flags = QPNP_LED_PWM_FLAGS;
@@ -1904,7 +1904,7 @@ static int led_multicolor_short_blink(struct qpnp_led_data *led, int pwm_coeffic
 static int led_multicolor_long_blink(struct qpnp_led_data *led, int pwm_coefficient){
 	int rc = 0;
 	struct lut_params	lut_params;
-	int *lut_long_blink;
+	int *lut_long_blink = 0;
 	LED_INFO("%s, name:%s, brightness = %d status: %d\n", __func__, led->cdev.name, led->cdev.brightness, led->status);
 
 	lut_params.flags = QPNP_LED_PWM_FLAGS;

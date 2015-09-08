@@ -602,7 +602,7 @@ static void qdss_disable(struct usb_function *f)
 
 static int qdss_dpl_ipa_connect(int port_num)
 {
-	int ret;
+	int ret = 0;
 	int dst_connection_idx;
 	struct f_qdss *qdss;
 	struct gqdss *g_qdss;
