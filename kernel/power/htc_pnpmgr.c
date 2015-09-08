@@ -1078,6 +1078,7 @@ user_perf_lvl_store(struct kobject *kobj, struct kobj_attribute *attr,
 		}
 
 		info[type].user_lvl_to_min_freq = min_freq;
+		sysfs_notify(kobj, NULL, "user_perf_lvl");
 		sysfs_notify(kobj, NULL, "user_lvl_to_min_freq");
 		return n;
 	}
@@ -1428,7 +1429,7 @@ static int init_perf_table_by_dt(const struct device_node *node)
 	uint32_t i, j, len = 0;
 	int *perf_table[MAX_TYPE] = {NULL};
 	int total_entry = cluster_num * USER_PERF_LVL_TOTAL;
-	int ret = 0;
+	int ret;
 
 	if (!of_get_property(node, PERF_TABLE, &len)
 		|| len <= 0) {
@@ -1496,7 +1497,7 @@ fail:
 static void init_cluster_info(void)
 {
 	const struct device_node *top = NULL;
-	int ret = 0;
+	int ret;
 
 	top = of_find_compatible_node(NULL, NULL,
 					 "htc,perf_table_v2");
@@ -1535,7 +1536,7 @@ static void init_cluster_info(void)
 
 static int __init pnpmgr_init(void)
 {
-	int ret, i, j = 0;
+	int ret, i, j;
 	char *name[MAX_TYPE] = {"big", "little"};
 	char buf[10];
 

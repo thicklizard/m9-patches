@@ -234,7 +234,7 @@ qpnp_flash_led_get_max_avail_current(struct flash_node_data *flash_node,
 					struct qpnp_flash_led *led)
 {
 	union power_supply_propval prop;
-	int max_curr_avail_ma = 0;
+	int max_curr_avail_ma;
 	int rc;
 
 	if (led->battery_psy) {
@@ -355,7 +355,7 @@ static ssize_t qpnp_flash_led_max_current_show(struct device *dev,
 	struct qpnp_flash_led *led;
 	struct flash_node_data *flash_node;
 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-	int max_curr_avail_ma = 0;
+	int max_curr_avail_ma;
 	flash_node = container_of(led_cdev, struct flash_node_data, cdev);
 	led = dev_get_drvdata(&flash_node->spmi_dev->dev);
 
@@ -654,7 +654,7 @@ int pmi8994_flashlight_mode2(int mode2, int mode13)
 	int rc;
 	u8 val;
 	union power_supply_propval psy_prop;
-	int max_curr_avail_ma = 0;
+	int max_curr_avail_ma;
 
 	this_led->flash_node->trigger = FLASH_LED0_TRIGGER | FLASH_LED1_TRIGGER;
 	this_led->flash_node->max_current = 1000;
@@ -972,7 +972,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 			dev_get_drvdata(&flash_node->spmi_dev->dev);
 	union power_supply_propval psy_prop;
 	int rc, brightness = flash_node->cdev.brightness;
-	int max_curr_avail_ma = 0;
+	int max_curr_avail_ma;
 	u8 val;
 
 	mutex_lock(&led->flash_led_lock);

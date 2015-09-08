@@ -137,7 +137,7 @@ static int parse_config(struct device *dev, struct synaptics_dsx_board_data *bda
 
 static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 {
-	int retval, coords_size = 0;
+	int retval, coords_size;
 	u32 value;
 	const char *name;
 	struct property *prop;

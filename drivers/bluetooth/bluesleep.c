@@ -303,7 +303,7 @@ static void bluesleep_sleep_work(struct work_struct *work)
 			set_bit(BT_ASLEEP, &flags);
 			
 			hsuart_power(0);
-			wake_lock_timeout(&bsi->wake_lock, HZ / 8);
+			wake_lock_timeout(&bsi->wake_lock, HZ / 2);
 			clear_bit(BT_ASLEEPING, &flags);
 		} else {
 			clear_bit(BT_ASLEEPING, &flags);
@@ -628,7 +628,7 @@ static void bluesleep_stop(void)
 	if (disable_irq_wake(bsi->host_wake_irq))
 		BT_ERR("Couldn't disable hostwake IRQ wakeup mode");
 #endif
-	wake_lock_timeout(&bsi->wake_lock, HZ / 8);
+	wake_lock_timeout(&bsi->wake_lock, HZ / 2);
 }
 static ssize_t bluepower_read_proc_btwake(struct file *file, char __user *buf,
 			       size_t size, loff_t *ppos)
