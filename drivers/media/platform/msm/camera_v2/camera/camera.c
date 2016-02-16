@@ -209,9 +209,9 @@ static int camera_v4l2_reqbufs(struct file *filep, void *fh,
 	session = msm_session_find(session_id);
 	if (WARN_ON(!session))
 		return -EIO;
-	mutex_lock(&session->lock_q);
+	mutex_lock(&session->lock);
 	ret = vb2_reqbufs(&sp->vb2_q, req);
-	mutex_unlock(&session->lock_q);
+	mutex_unlock(&session->lock);
 	return ret;
 }
 
@@ -232,9 +232,9 @@ static int camera_v4l2_qbuf(struct file *filep, void *fh,
 	session = msm_session_find(session_id);
 	if (WARN_ON(!session))
 		return -EIO;
-	mutex_lock(&session->lock_q);
+	mutex_lock(&session->lock);
 	ret = vb2_qbuf(&sp->vb2_q, pb);
-	mutex_unlock(&session->lock_q);
+	mutex_unlock(&session->lock);
 	return ret;
 }
 
@@ -249,9 +249,9 @@ static int camera_v4l2_dqbuf(struct file *filep, void *fh,
 	session = msm_session_find(session_id);
 	if (WARN_ON(!session))
 		return -EIO;
-	mutex_lock(&session->lock_q);
+	mutex_lock(&session->lock);
 	ret = vb2_dqbuf(&sp->vb2_q, pb, filep->f_flags & O_NONBLOCK);
-	mutex_unlock(&session->lock_q);
+	mutex_unlock(&session->lock);
 	return ret;
 }
 
@@ -650,7 +650,7 @@ static int camera_v4l2_close(struct file *filep)
 	pr_info("%s: E\n", __func__); 
 
 	opn_idx = atomic_read(&pvdev->opened);
-	pr_debug("%s: close stream_id=%d\n", __func__, sp->stream_id);
+	pr_info("%s: close stream_id=%d\n", __func__, sp->stream_id);
 	mask = (1 << sp->stream_id);
 	opn_idx &= ~mask;
 	atomic_set(&pvdev->opened, opn_idx);

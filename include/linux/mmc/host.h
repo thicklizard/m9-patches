@@ -246,7 +246,7 @@ struct mmc_host {
 
 #define MMC_CAP2_BOOTPART_NOACC	(1 << 0)	
 #define MMC_CAP2_CACHE_CTRL	(1 << 1)	
-#define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)	
+#define MMC_CAP2_FULL_PWR_CYCLE	(1 << 2)	
 #define MMC_CAP2_NO_MULTI_READ	(1 << 3)	
 #define MMC_CAP2_NO_SLEEP_CMD	(1 << 4)	
 #define MMC_CAP2_HS200_1_8V_SDR	(1 << 5)        
@@ -411,6 +411,7 @@ struct mmc_host {
 		unsigned int	down_threshold;
 		ktime_t		start_busy;
 		bool		enable;
+		bool		scale_down_in_low_wr_load;
 		bool		initialized;
 		bool		in_progress;
 		
@@ -426,6 +427,7 @@ struct mmc_host {
 	int			cd_pin_depth;
 	unsigned int	extended_debounce;
 	bool			wakeup_on_idle;
+	unsigned int reset_wa_cnt;
 	unsigned long		private[0] ____cacheline_aligned;
 };
 
@@ -475,8 +477,6 @@ int mmc_power_restore_host(struct mmc_host *host);
 
 void mmc_detect_change(struct mmc_host *, unsigned long delay);
 void mmc_request_done(struct mmc_host *, struct mmc_request *);
-
-int mmc_cache_ctrl(struct mmc_host *, u8);
 
 static inline void mmc_signal_sdio_irq(struct mmc_host *host)
 {
