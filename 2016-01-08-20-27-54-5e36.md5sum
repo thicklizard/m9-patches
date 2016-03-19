@@ -510,6 +510,6 @@ b0970b58e552d262bd5375c7a87fc99e source/include/uapi/linux/types.h
 92ad195bf5b2cf26ec4c7d4396367ff6 source/include/uapi/linux/xattr.h
 3ef4add390236b6805fb1dbd0641941a source/include/uapi/linux/xfrm.h
 1d1bd9ce4a30db34f4d3003107fba700 source/include/xen/xen.h
-9ef90b8cc42dd317ddef6415f2e45045 generated/include/generated/autoconf.h
+6e38ac151628976fbae1dd84813b3d1f generated/include/generated/autoconf.h
 9da942c5b6d8380ebf9a0bd432b2be72 generated/include/generated/bounds.h
 602352854f49625bcaed83d7b573f0ee generated/include/generated/uapi/linux/version.h

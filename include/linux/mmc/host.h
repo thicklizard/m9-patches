@@ -427,6 +427,7 @@ struct mmc_host {
 	int			cd_pin_depth;
 	unsigned int	extended_debounce;
 	bool			wakeup_on_idle;
+	unsigned int reset_wa_cnt;
 	unsigned long		private[0] ____cacheline_aligned;
 };
 
