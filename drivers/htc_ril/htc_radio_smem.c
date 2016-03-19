@@ -380,7 +380,7 @@ static int restart_notifier_cb(struct notifier_block *this,
 				void *data)
 {
 #if defined(CONFIG_HTC_DEBUG_SSR)
-	if (code == SUBSYS_AFTER_SHUTDOWN) {
+	if (code == SUBSYS_RAMDUMP_NOTIFICATION) {
 		struct restart_notifier_block *notifier;
 
 		notifier = container_of(this,

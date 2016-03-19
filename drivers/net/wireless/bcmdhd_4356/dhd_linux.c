@@ -3363,6 +3363,16 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 				DHD_ERROR(("%s: UNICAST: " MACDBG "\n",
 					__FUNCTION__, MAC2STRDBG(&dump_data[6])));
 			}
+			if (protocol == ETHER_TYPE_IP) {
+				struct iphdr *h = (struct iphdr *)&dump_data[ETHER_HDR_LEN];
+				
+				if (h->ihl != 5 || h->version != 4) {
+					DHD_INFO(("%s: invalid IP header\n", __FUNCTION__));
+				} else {
+					DHD_ERROR(("%s: SRC IP addr: " IPV4_ADDR_STR "\n",
+						__FUNCTION__, IPV4_ADDR_TO_STR(ntoh32(h->saddr))));
+				}
+			}
 			
 #ifdef DHD_RX_FULL_DUMP
 			{
