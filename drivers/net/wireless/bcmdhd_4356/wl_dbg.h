@@ -29,7 +29,6 @@
 #ifndef _wl_dbg_h_
 #define _wl_dbg_h_
 
-/* wl_msg_level is a bit vector with defs in wlioctl.h */
 extern uint32 wl_msg_level;
 extern uint32 wl_msg_level2;
 
@@ -53,14 +52,9 @@ extern int osl_printf(const char *fmt, ...);
 
 #if defined(BCMCONDITIONAL_LOGGING)
 
-/* Ideally this should be some include file that vendors can include to conditionalize logging */
 
-/* DBGONLY() macro to reduce ifdefs in code for statements that are only needed when
- * BCMDBG is defined.
- */
 #define DBGONLY(x)
 
-/* To disable a message completely ... until you need it again */
 #define WL_NONE(args)
 #define WL_ERROR(args)		do {if (wl_msg_level & WL_ERROR_VAL) WL_PRINT(args);} while (0)
 #define WL_TRACE(args)
@@ -183,14 +177,10 @@ extern int osl_printf(const char *fmt, ...);
 #define WL_WNM_ON()		0
 #define WL_PCIE_ON()		0
 
-#else /* !BCMDBG */
+#else 
 
-/* DBGONLY() macro to reduce ifdefs in code for statements that are only needed when
- * BCMDBG is defined.
- */
 #define DBGONLY(x)
 
-/* To disable a message completely ... until you need it again */
 #define WL_NONE(args)
 
 #define	WL_ERROR(args)
@@ -261,13 +251,12 @@ extern int osl_printf(const char *fmt, ...);
 #define WL_FFPLD(args)
 #define WL_MCHAN(args)
 
-/* Define WLMSG_DFS automatically for WLTEST builds */
 
 #ifdef WLMSG_DFS
 #define WL_DFS(args)		do {if (wl_msg_level & WL_DFS_VAL) WL_PRINT(args);} while (0)
-#else /* WLMSG_DFS */
+#else 
 #define WL_DFS(args)
-#endif /* WLMSG_DFS */
+#endif 
 #define WL_WOWL(args)
 #ifdef WLMSG_SCAN
 #define WL_SCAN(args)		WL_PRINT(args)
@@ -350,9 +339,9 @@ extern int osl_printf(const char *fmt, ...);
 #define WL_MODE_SWITCH_ON()		0
 #ifdef WLMSG_DFS
 #define WL_DFS_ON()		1
-#else /* WLMSG_DFS */
+#else 
 #define WL_DFS_ON()		0
-#endif /* WLMSG_DFS */
+#endif 
 #ifdef WLMSG_SCAN
 #define WL_SCAN_ON()            1
 #else
@@ -391,7 +380,7 @@ extern int osl_printf(const char *fmt, ...);
 #define WL_AMPDU_HWTXS_ON()     0
 
 #define WL_WNM_ON()		0
-#endif /* LINUX_POSTMOGRIFY_REMOVAL */
+#endif 
 #define WL_APSTA_UPDN(args)
 #define WL_APSTA_RX(args)
 #ifdef WLMSG_WSEC
@@ -407,4 +396,4 @@ extern int osl_printf(const char *fmt, ...);
 
 extern uint32 wl_msg_level;
 extern uint32 wl_msg_level2;
-#endif /* _wl_dbg_h_ */
+#endif 
