@@ -29,7 +29,6 @@
 #include <bcmutils.h>
 #include <hnd_pktpool.h>
 
-/* Registry size is one larger than max pools, as slot #0 is reserved */
 #define PKTPOOLREG_RSVD_ID				(0U)
 #define PKTPOOLREG_RSVD_PTR				(POOLPTR(0xdeaddead))
 #define PKTPOOLREG_FREE_PTR				(POOLPTR(NULL))
@@ -37,30 +36,25 @@
 #define PKTPOOL_REGISTRY_SET(id, pp)	(pktpool_registry_set((id), (pp)))
 #define PKTPOOL_REGISTRY_CMP(id, pp)	(pktpool_registry_cmp((id), (pp)))
 
-/* Tag a registry entry as free for use */
 #define PKTPOOL_REGISTRY_CLR(id)		\
 		PKTPOOL_REGISTRY_SET((id), PKTPOOLREG_FREE_PTR)
 #define PKTPOOL_REGISTRY_ISCLR(id)		\
 		(PKTPOOL_REGISTRY_CMP((id), PKTPOOLREG_FREE_PTR))
 
-/* Tag registry entry 0 as reserved */
 #define PKTPOOL_REGISTRY_RSV()			\
 		PKTPOOL_REGISTRY_SET(PKTPOOLREG_RSVD_ID, PKTPOOLREG_RSVD_PTR)
 #define PKTPOOL_REGISTRY_ISRSVD()		\
 		(PKTPOOL_REGISTRY_CMP(PKTPOOLREG_RSVD_ID, PKTPOOLREG_RSVD_PTR))
 
-/* Walk all un-reserved entries in registry */
 #define PKTPOOL_REGISTRY_FOREACH(id)	\
 		for ((id) = 1U; (id) <= pktpools_max; (id)++)
 
-uint32 pktpools_max = 0U; /* maximum number of pools that may be initialized */
-pktpool_t *pktpools_registry[PKTPOOL_MAXIMUM_ID + 1]; /* Pktpool registry */
+uint32 pktpools_max = 0U; 
+pktpool_t *pktpools_registry[PKTPOOL_MAXIMUM_ID + 1]; 
 
-/* Register/Deregister a pktpool with registry during pktpool_init/deinit */
 static int pktpool_register(pktpool_t * poolptr);
 static int pktpool_deregister(pktpool_t * poolptr);
 
-/** accessor functions required when ROMming this file, forced into RAM */
 static void
 BCMRAMFN(pktpool_registry_set)(int id, pktpool_t *pp)
 {
@@ -73,7 +67,7 @@ BCMRAMFN(pktpool_registry_cmp)(int id, pktpool_t *pp)
 	return pktpools_registry[id] == pp;
 }
 
-int /* Construct a pool registry to serve a maximum of total_pools */
+int 
 pktpool_attach(osl_t *osh, uint32 total_pools)
 {
 	uint32 poolid;
@@ -84,10 +78,10 @@ pktpool_attach(osl_t *osh, uint32 total_pools)
 
 	ASSERT(total_pools <= PKTPOOL_MAXIMUM_ID);
 
-	/* Initialize registry: reserve slot#0 and tag others as free */
-	PKTPOOL_REGISTRY_RSV();		/* reserve slot#0 */
+	
+	PKTPOOL_REGISTRY_RSV();		
 
-	PKTPOOL_REGISTRY_FOREACH(poolid) {	/* tag all unreserved entries as free */
+	PKTPOOL_REGISTRY_FOREACH(poolid) {	
 		PKTPOOL_REGISTRY_CLR(poolid);
 	}
 
@@ -96,7 +90,7 @@ pktpool_attach(osl_t *osh, uint32 total_pools)
 	return (int)pktpools_max;
 }
 
-int /* Destruct the pool registry. Ascertain all pools were first de-inited */
+int 
 pktpool_dettach(osl_t *osh)
 {
 	uint32 poolid;
@@ -105,41 +99,41 @@ pktpool_dettach(osl_t *osh)
 		return BCME_OK;
 	}
 
-	/* Ascertain that no pools are still registered */
-	ASSERT(PKTPOOL_REGISTRY_ISRSVD()); /* assert reserved slot */
+	
+	ASSERT(PKTPOOL_REGISTRY_ISRSVD()); 
 
-	PKTPOOL_REGISTRY_FOREACH(poolid) {	/* ascertain all others are free */
+	PKTPOOL_REGISTRY_FOREACH(poolid) {	
 		ASSERT(PKTPOOL_REGISTRY_ISCLR(poolid));
 	}
 
-	pktpools_max = 0U; /* restore boot state */
+	pktpools_max = 0U; 
 
 	return BCME_OK;
 }
 
-static int	/* Register a pool in a free slot; return the registry slot index */
+static int	
 pktpool_register(pktpool_t * poolptr)
 {
 	uint32 poolid;
 
 	if (pktpools_max == 0U) {
-		return PKTPOOL_INVALID_ID; /* registry has not yet been constructed */
+		return PKTPOOL_INVALID_ID; 
 	}
 
 	ASSERT(pktpools_max != 0U);
 
-	/* find an empty slot in pktpools_registry */
+	
 	PKTPOOL_REGISTRY_FOREACH(poolid) {
 		if (PKTPOOL_REGISTRY_ISCLR(poolid)) {
-			PKTPOOL_REGISTRY_SET(poolid, POOLPTR(poolptr)); /* register pool */
-			return (int)poolid; /* return pool ID */
+			PKTPOOL_REGISTRY_SET(poolid, POOLPTR(poolptr)); 
+			return (int)poolid; 
 		}
-	} /* FOREACH */
+	} 
 
-	return PKTPOOL_INVALID_ID;	/* error: registry is full */
+	return PKTPOOL_INVALID_ID;	
 }
 
-static int	/* Deregister a pktpool, given the pool pointer; tag slot as free */
+static int	
 pktpool_deregister(pktpool_t * poolptr)
 {
 	uint32 poolid;
@@ -149,34 +143,18 @@ pktpool_deregister(pktpool_t * poolptr)
 	poolid = POOLID(poolptr);
 	ASSERT(poolid <= pktpools_max);
 
-	/* Asertain that a previously registered poolptr is being de-registered */
+	
 	if (PKTPOOL_REGISTRY_CMP(poolid, POOLPTR(poolptr))) {
-		PKTPOOL_REGISTRY_CLR(poolid); /* mark as free */
+		PKTPOOL_REGISTRY_CLR(poolid); 
 	} else {
 		ASSERT(0);
-		return BCME_ERROR; /* mismatch in registry */
+		return BCME_ERROR; 
 	}
 
 	return BCME_OK;
 }
 
 
-/*
- * pktpool_init:
- * User provides a pktpool_t sturcture and specifies the number of packets to
- * be pre-filled into the pool (pplen). The size of all packets in a pool must
- * be the same and is specified by plen.
- * pktpool_init first attempts to register the pool and fetch a unique poolid.
- * If registration fails, it is considered an BCME_ERR, caused by either the
- * registry was not pre-created (pktpool_attach) or the registry is full.
- * If registration succeeds, then the requested number of packets will be filled
- * into the pool as part of initialization. In the event that there is no
- * available memory to service the request, then BCME_NOMEM will be returned
- * along with the count of how many packets were successfully allocated.
- * In dongle builds, prior to memory reclaimation, one should limit the number
- * of packets to be allocated during pktpool_init and fill the pool up after
- * reclaim stage.
- */
 int
 pktpool_init(osl_t *osh, pktpool_t *pktp, int *pplen, int plen, bool istx, uint8 type)
 {
@@ -192,7 +170,7 @@ pktpool_init(osl_t *osh, pktpool_t *pktp, int *pplen, int plen, bool istx, uint8
 
 	bzero(pktp, sizeof(pktpool_t));
 
-	/* assign a unique pktpool id */
+	
 	if ((pktp_id = (uint8) pktpool_register(pktp)) == PKTPOOL_INVALID_ID) {
 		return BCME_ERROR;
 	}
@@ -211,19 +189,15 @@ pktpool_init(osl_t *osh, pktpool_t *pktp, int *pplen, int plen, bool istx, uint8
 		p = PKTGET(osh, plen, TRUE);
 
 		if (p == NULL) {
-			/* Not able to allocate all requested pkts
-			 * so just return what was actually allocated
-			 * We can add to the pool later
-			 */
-			if (pktp->freelist == NULL) /* pktpool free list is empty */
+			if (pktp->freelist == NULL) 
 				err = BCME_NOMEM;
 
 			goto exit;
 		}
 
-		PKTSETPOOL(osh, p, TRUE, pktp); /* Tag packet with pool ID */
+		PKTSETPOOL(osh, p, TRUE, pktp); 
 
-		PKTSETFREELIST(p, pktp->freelist); /* insert p at head of free list */
+		PKTSETFREELIST(p, pktp->freelist); 
 		pktp->freelist = p;
 
 		pktp->avail++;
@@ -240,14 +214,6 @@ exit:
 	return err;
 }
 
-/*
- * pktpool_deinit:
- * Prior to freeing a pktpool, all packets must be first freed into the pktpool.
- * Upon pktpool_deinit, all packets in the free pool will be freed to the heap.
- * An assert is in place to ensure that there are no packets still lingering
- * around. Packets freed to a pool after the deinit will cause a memory
- * corruption as the pktpool_t structure no longer exists.
- */
 int
 pktpool_deinit(osl_t *osh, pktpool_t *pktp)
 {
@@ -268,12 +234,12 @@ pktpool_deinit(osl_t *osh, pktpool_t *pktp)
 	while (pktp->freelist != NULL) {
 		void * p = pktp->freelist;
 
-		pktp->freelist = PKTFREELIST(p); /* unlink head packet from free list */
+		pktp->freelist = PKTFREELIST(p); 
 		PKTSETFREELIST(p, NULL);
 
-		PKTSETPOOL(osh, p, FALSE, NULL); /* clear pool ID tag in pkt */
+		PKTSETPOOL(osh, p, FALSE, NULL); 
 
-		PKTFREE(osh, p, pktp->istx); /* free the packet */
+		PKTFREE(osh, p, pktp->istx); 
 
 		freed++;
 		ASSERT(freed <= pktp->len);
@@ -284,12 +250,12 @@ pktpool_deinit(osl_t *osh, pktpool_t *pktp)
 
 	pktp->len -= freed;
 
-	pktpool_deregister(pktp); /* release previously acquired unique pool id */
+	pktpool_deregister(pktp); 
 	POOLSETID(pktp, PKTPOOL_INVALID_ID);
 
 	pktp->inited = FALSE;
 
-	/* Are there still pending pkts? */
+	
 	ASSERT(pktp->len == 0);
 
 	return 0;
@@ -335,8 +301,8 @@ pktpool_deq(pktpool_t *pktp)
 
 	ASSERT(pktp->freelist != NULL);
 
-	p = pktp->freelist;  /* dequeue packet from head of pktpool free list */
-	pktp->freelist = PKTFREELIST(p); /* free list points to next packet */
+	p = pktp->freelist;  
+	pktp->freelist = PKTFREELIST(p); 
 	PKTSETFREELIST(p, NULL);
 
 	pktp->avail--;
@@ -349,16 +315,14 @@ pktpool_enq(pktpool_t *pktp, void *p)
 {
 	ASSERT(p != NULL);
 
-	PKTSETFREELIST(p, pktp->freelist); /* insert at head of pktpool free list */
-	pktp->freelist = p; /* free list points to newly inserted packet */
+	PKTSETFREELIST(p, pktp->freelist); 
+	pktp->freelist = p; 
 
 	pktp->avail++;
 	ASSERT(pktp->avail <= pktp->len);
 }
 
-/* utility for registering host addr fill function called from pciedev */
 int
-/* BCMATTACHFN */
 (pktpool_hostaddr_fill_register)(pktpool_t *pktp, pktpool_cb_extn_t cb, void *arg)
 {
 
@@ -381,8 +345,6 @@ pktpool_rxcplid_fill_register(pktpool_t *pktp, pktpool_cb_extn_t cb, void *arg)
 	pktp->rxcplidfn.arg = arg;
 	return 0;
 }
-/* Callback functions for split rx modes */
-/* when evr host posts rxbuffer, invike dma_rxfill from pciedev layer */
 void
 pktpool_invoke_dmarxfill(pktpool_t *pktp)
 {
@@ -403,7 +365,6 @@ pkpool_haddr_avail_register_cb(pktpool_t *pktp, pktpool_cb_t cb, void *arg)
 
 	return 0;
 }
-/* No BCMATTACHFN as it is used in xdc_enable_ep which is not an attach function */
 int
 pktpool_avail_register(pktpool_t *pktp, pktpool_cb_t cb, void *arg)
 {
@@ -592,7 +553,7 @@ pktpool_stop_trigger(pktpool_t *pktp, void *p)
 
 	return 0;
 }
-#endif /* BCMDBG_POOL */
+#endif 
 
 int
 pktpool_avail_notify_normal(osl_t *osh, pktpool_t *pktp)
@@ -649,8 +610,6 @@ pktpool_avail_notify(pktpool_t *pktp)
 		}
 	}
 
-	/* Alternate between filling from head or tail
-	 */
 	pktp->cbtoggle ^= 1;
 
 	return 0;
@@ -664,7 +623,7 @@ pktpool_get(pktpool_t *pktp)
 	p = pktpool_deq(pktp);
 
 	if (p == NULL) {
-		/* Notify and try to reclaim tx pkts */
+		
 		if (pktp->ecbcnt)
 			pktpool_empty_notify(pktp);
 
@@ -681,7 +640,7 @@ pktpool_free(pktpool_t *pktp, void *p)
 {
 	ASSERT(p != NULL);
 #ifdef BCMDBG_POOL
-	/* pktpool_stop_trigger(pktp, p); */
+	
 #endif
 
 	pktpool_enq(pktp, p);
@@ -703,7 +662,7 @@ pktpool_add(pktpool_t *pktp, void *p)
 	if (pktp->len == pktp->maxlen)
 		return BCME_RANGE;
 
-	/* pkts in pool have same length */
+	
 	ASSERT(pktp->plen == PKTLEN(OSH_NULL, p));
 	PKTSETPOOL(OSH_NULL, p, TRUE, pktp);
 
@@ -717,19 +676,12 @@ pktpool_add(pktpool_t *pktp, void *p)
 	return 0;
 }
 
-/* Force pktpool_setmaxlen () into RAM as it uses a constant
- * (PKTPOOL_LEN_MAX) that may be changed post tapeout for ROM-based chips.
- */
 int
 BCMRAMFN(pktpool_setmaxlen)(pktpool_t *pktp, uint16 maxlen)
 {
 	if (maxlen > PKTPOOL_LEN_MAX)
 		maxlen = PKTPOOL_LEN_MAX;
 
-	/* if pool is already beyond maxlen, then just cap it
-	 * since we currently do not reduce the pool len
-	 * already allocated
-	 */
 	pktp->maxlen = (pktp->len > maxlen) ? pktp->len : maxlen;
 
 	return pktp->maxlen;

@@ -30,13 +30,11 @@
 #include <proto/bcmevent.h>
 
 
-/* Table of event name strings for UIs and debugging dumps */
 typedef struct {
 	uint event;
 	const char *name;
 } bcmevent_name_str_t;
 
-/* Use the actual name for event tracing */
 #define BCMEVENT_NAME(_event) {(_event), #_event}
 
 static const bcmevent_name_str_t bcmevent_names[] = {
@@ -77,13 +75,13 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 	BCMEVENT_NAME(WLC_E_PFN_NET_LOST),
 #if defined(IBSS_PEER_DISCOVERY_EVENT)
 	BCMEVENT_NAME(WLC_E_IBSS_ASSOC),
-#endif /* defined(IBSS_PEER_DISCOVERY_EVENT) */
+#endif 
 	BCMEVENT_NAME(WLC_E_RADIO),
 	BCMEVENT_NAME(WLC_E_PSM_WATCHDOG),
 #if defined(BCMCCX) && defined(CCX_SDK)
 	BCMEVENT_NAME(WLC_E_CCX_ASSOC_START),
 	BCMEVENT_NAME(WLC_E_CCX_ASSOC_ABORT),
-#endif /* BCMCCX && CCX_SDK */
+#endif 
 	BCMEVENT_NAME(WLC_E_PROBREQ_MSG),
 	BCMEVENT_NAME(WLC_E_SCAN_CONFIRM_IND),
 	BCMEVENT_NAME(WLC_E_PSK_SUP),
@@ -111,7 +109,7 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 #ifdef BCMWAPI_WAI
 	BCMEVENT_NAME(WLC_E_WAI_STA_EVENT),
 	BCMEVENT_NAME(WLC_E_WAI_MSG),
-#endif /* BCMWAPI_WAI */
+#endif 
 	BCMEVENT_NAME(WLC_E_ESCAN_RESULT),
 	BCMEVENT_NAME(WLC_E_ACTION_FRAME_OFF_CHAN_COMPLETE),
 #ifdef WLP2P
@@ -140,11 +138,11 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 	BCMEVENT_NAME(WLC_E_BEACON_FRAME_RX),
 #ifdef WLTDLS
 	BCMEVENT_NAME(WLC_E_TDLS_PEER_EVENT),
-#endif /* WLTDLS */
+#endif 
 	BCMEVENT_NAME(WLC_E_NATIVE),
 #ifdef WLPKTDLYSTAT
 	BCMEVENT_NAME(WLC_E_PKTDELAY_IND),
-#endif /* WLPKTDLYSTAT */
+#endif 
 	BCMEVENT_NAME(WLC_E_SERVICE_FOUND),
 	BCMEVENT_NAME(WLC_E_GAS_FRAGMENT_RX),
 	BCMEVENT_NAME(WLC_E_GAS_COMPLETE),
@@ -152,7 +150,7 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 	BCMEVENT_NAME(WLC_E_P2PO_DEL_DEVICE),
 #ifdef WLWNM
 	BCMEVENT_NAME(WLC_E_WNM_STA_SLEEP),
-#endif /* WLWNM */
+#endif 
 #if defined(WL_PROXDETECT)
 	BCMEVENT_NAME(WLC_E_PROXD),
 #endif
@@ -164,7 +162,7 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 	BCMEVENT_NAME(WLC_E_TXFAIL_THRESH),
 #ifdef WLAIBSS
 	BCMEVENT_NAME(WLC_E_AIBSS_TXFAIL),
-#endif /* WLAIBSS */
+#endif 
 #ifdef WLBSSLOAD_REPORT
 	BCMEVENT_NAME(WLC_E_BSS_LOAD),
 #endif
@@ -173,7 +171,7 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 #endif
 #ifdef WLFBT
 	BCMEVENT_NAME(WLC_E_FBT_AUTH_REQ_IND),
-#endif /* WLFBT */
+#endif 
 	BCMEVENT_NAME(WLC_E_RMC_EVENT),
 #ifdef CUSTOMER_HW_ONE
 	BCMEVENT_NAME(WLC_E_RSSI_LOW),
@@ -185,11 +183,6 @@ static const bcmevent_name_str_t bcmevent_names[] = {
 
 const char *bcmevent_get_name(uint event_type)
 {
-	/* note:  first coded this as a static const but some
-	 * ROMs already have something called event_name so
-	 * changed it so we don't have a variable for the
-	 * 'unknown string
-	 */
 	const char *event_name = NULL;
 
 	uint idx;
@@ -201,8 +194,5 @@ const char *bcmevent_get_name(uint event_type)
 		}
 	}
 
-	/* if we find an event name in the array, return it.
-	 * otherwise return unknown string.
-	 */
 	return ((event_name) ? event_name : "Unknown Event");
 }

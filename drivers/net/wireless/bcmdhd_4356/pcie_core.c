@@ -37,11 +37,8 @@
 
 #include "pcie_core.h"
 
-/* local prototypes */
 
-/* local variables */
 
-/* function definitions */
 
 #ifdef BCMDRIVER
 
@@ -57,12 +54,12 @@ void pcie_watchdog_reset(osl_t *osh, si_t *sih, sbpcieregs_t *sbpcieregs)
 	sbpcieregs_t *pcie = NULL;
 	uint32 origidx = si_coreidx(sih);
 
-	/* Switch to PCIE2 core */
+	
 	pcie = (sbpcieregs_t *)si_setcore(sih, PCIE2_CORE_ID, 0);
 	BCM_REFERENCE(pcie);
 	ASSERT(pcie != NULL);
 
-	/* Disable/restore ASPM Control to protect the watchdog reset */
+	
 	W_REG(osh, &sbpcieregs->configaddr, PCIECFGREG_LINK_STATUS_CTRL);
 	lsc = R_REG(osh, &sbpcieregs->configdata);
 	val = lsc & (~PCIE_ASPM_ENAB);
@@ -74,9 +71,6 @@ void pcie_watchdog_reset(osl_t *osh, si_t *sih, sbpcieregs_t *sbpcieregs)
 	W_REG(osh, &sbpcieregs->configaddr, PCIECFGREG_LINK_STATUS_CTRL);
 	W_REG(osh, &sbpcieregs->configdata, lsc);
 
-	/* Write configuration registers back to the shadow registers
-	 * cause shadow registers are cleared out after watchdog reset.
-	 */
 	for (i = 0; i < ARRAYSIZE(cfg_offset); i++) {
 		W_REG(osh, &sbpcieregs->configaddr, cfg_offset[i]);
 		val = R_REG(osh, &sbpcieregs->configdata);
@@ -85,4 +79,4 @@ void pcie_watchdog_reset(osl_t *osh, si_t *sih, sbpcieregs_t *sbpcieregs)
 	si_setcoreidx(sih, origidx);
 }
 
-#endif /* BCMDRIVER */
+#endif 
