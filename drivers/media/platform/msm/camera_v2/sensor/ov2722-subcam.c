@@ -20,6 +20,7 @@ DEFINE_MSM_MUTEX(ov2722_mut);
 #define OTP_SIZE 10
 
 static struct msm_sensor_ctrl_t ov2722_s_ctrl;
+//HTC_START, for subcam no ack issue
 extern int g_subcam_SOF;
 int g_subcam_no_ack = 0;
 static struct msm_camera_i2c_reg_array restart_reg_array[] = {
@@ -123,7 +124,7 @@ static struct msm_camera_i2c_reg_array restart_reg_array[] = {
   {0x3a1f, 0x10},
 
   {0x3011, 0x22},
-  
+  //==================
   {0x3800, 0x00},
   {0x3801, 0x08},
   {0x3802, 0x00},
@@ -152,11 +153,11 @@ static struct msm_camera_i2c_reg_array restart_reg_array[] = {
   {0x3813, 0x03},
 
 
-  {0x5000, 0xcd}, 
-  {0x3503, 0x07}, 
+  {0x5000, 0xcd}, // disable awb
+  {0x3503, 0x07}, // diable ace
 
-  {0x4009, 0x40},  
-  
+  {0x4009, 0x40},  //  Ethan 1003	0x10   // Black level range /
+  //===========
 
   {0x0100, 0x01},
   {0x301a, 0xf0},
@@ -182,6 +183,7 @@ static  struct msm_camera_i2c_reg_setting stop_settings = {
   .data_type = MSM_CAMERA_I2C_BYTE_DATA,
   .delay = 0,
 };
+//HTC_END
 
 
 struct msm_sensor_power_setting ov2722_sub_power_setting[] = {
@@ -272,6 +274,8 @@ struct msm_sensor_power_setting ov2722_sub_power_setting_XC[] = {
 
 };
 
+//For power down sequece, keep reset pin low
+//For better code maintainability (copy data variable), keep the same array size with ov2722_sub_power_setting
 struct msm_sensor_power_setting ov2722_sub_power_down_setting[] = {
 	{
 		.seq_type = SENSOR_CLK,
@@ -311,6 +315,7 @@ struct msm_sensor_power_setting ov2722_sub_power_down_setting[] = {
 	},
 };
 
+//HTC_START, for subcam no ack issue
 static void ov2722_restart(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	long rc = 0;
@@ -360,6 +365,7 @@ static int ov2722_check_SOF(struct msm_sensor_ctrl_t *s_ctrl)
 		return -EFAULT;;
 	}
 }
+//HTC_END
 
 static int ov2722_read_fuseid(struct sensorb_cfg_data *cdata,
 	struct msm_sensor_ctrl_t *s_ctrl)
@@ -392,7 +398,7 @@ static int ov2722_read_fuseid(struct sensorb_cfg_data *cdata,
 		pr_err("%s: i2c_write failed\n", __func__);
 		return rc;
 	}
-	
+	// clear
 	for (i = 0x3d00; i <= 0x3d1f; i++) {
 		rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(s_ctrl->sensor_i2c_client, i, 0, MSM_CAMERA_I2C_BYTE_DATA);
 		if (rc < 0) {
@@ -459,7 +465,7 @@ static int ov2722_read_fuseid32(struct sensorb_cfg_data32 *cdata,
 		pr_err("%s: i2c_write failed\n", __func__);
 		return rc;
 	}
-	
+	// clear
 	for (i = 0x3d00; i <= 0x3d1f; i++) {
 		rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(s_ctrl->sensor_i2c_client, i, 0, MSM_CAMERA_I2C_BYTE_DATA);
 		if (rc < 0) {
@@ -590,18 +596,18 @@ static int32_t ov2722_platform_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	match = of_match_device(ov2722_dt_match, &pdev->dev);
 	if (match)
-	
+	//HTC_START , get board info from device tree
 	{
 		if(msm_sensor_get_boardinfo(pdev->dev.of_node))
 		{
 			ov2722_s_ctrl.power_setting_array.power_setting = ov2722_sub_power_setting_XC;
 			ov2722_s_ctrl.power_setting_array.size = ARRAY_SIZE(ov2722_sub_power_setting_XC);
 		}
-	
+	//HTC_END
 		rc = msm_sensor_platform_probe(pdev, match->data);
-	
+	//HTC_START , get board info from device tree
 	}
-	
+	//HTC_END
 	else {
 		pr_err("%s:%d match is null\n", __func__, __LINE__);
 		rc = -EINVAL;
@@ -650,21 +656,33 @@ int32_t ov2722_sub_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
     pr_info("%s: -\n", __func__);
     return status;
 }
+//For power down sequece, keep reset pin low
 int32_t ov2722_sub_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 {
     int32_t status;
-    
-   
-    
+    //int i = 0;
+   // int j = 0;
+    //int data_size;
     pr_info("%s: +\n", __func__);
     s_ctrl->power_setting_array.power_setting = ov2722_sub_power_down_setting;
     s_ctrl->power_setting_array.size = ARRAY_SIZE(ov2722_sub_power_down_setting);
+//HTC_START, for subcam no ack issue
     g_subcam_no_ack = 0;
+//HTC_END
+    /*When release regulator, need the same data pointer from power up sequence.
+    for(i = 0; i < s_ctrl->power_setting_array.size;  i++)
+    {
+        data_size = sizeof(ov2722_sub_power_down_setting[i].data)/sizeof(void *);
+        for (j =0; j < data_size; j++ )
+        ov2722_sub_power_down_setting[i].data[j] = ov2722_sub_power_setting[i].data[j];
+    }
+*/
     status = msm_sensor_power_down(s_ctrl);
     pr_info("%s: -\n", __func__);
     return status;
 }
 
+//HTC_START, for subcam no ack issue
 int32_t ov2722_sub_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 	void __user *argp)
 {
@@ -850,7 +868,9 @@ int32_t ov2722_sub_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 	}
 	return rc;
 }
+//HTC_END
 
+//HTC_START , move read OTP to sensor probe
 int32_t ov2722_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t rc = 0;
@@ -870,20 +890,21 @@ int32_t ov2722_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	}
 	return rc;
 }
+//HTC_END
 
 
 
 static struct msm_sensor_fn_t ov2722_sensor_func_tbl = {
-	
+	//HTC_START, for subcam no ack issue
 	#if 0
 	.sensor_config = msm_sensor_config,
 	.sensor_config32 = msm_sensor_config32,
 	#else
-	
+	//for subcam no ack issue
 	.sensor_config = ov2722_sub_sensor_config,
 	.sensor_config32 = ov2722_sub_sensor_config32,
 	#endif
-	
+	//HTC_END
 	.sensor_power_up = ov2722_sub_sensor_power_up,
 	.sensor_power_down = ov2722_sub_sensor_power_down,
 	.sensor_match_id = msm_sensor_match_id,

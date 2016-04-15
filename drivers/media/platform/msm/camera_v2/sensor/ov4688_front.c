@@ -200,18 +200,18 @@ static int32_t ov4688_platform_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	match = of_match_device(ov4688_dt_match, &pdev->dev);
 	if (match)
-	
+	//HTC_START , get board info from device tree
 	{
 		if(msm_sensor_get_boardinfo(pdev->dev.of_node))
 		{
 			ov4688_s_ctrl.power_setting_array.power_setting = ov4688_power_setting_XC;
 			ov4688_s_ctrl.power_setting_array.size = ARRAY_SIZE(ov4688_power_setting_XC);
 		}
-	
+	//HTC_END
 		rc = msm_sensor_platform_probe(pdev, match->data);
-	
+	//HTC_START , get board info from device tree
 	}
-	
+	//HTC_END
 	else {
 		pr_err("%s:%d match is null\n", __func__, __LINE__);
 		rc = -EINVAL;
@@ -251,17 +251,44 @@ static void __exit ov4688_exit_module(void)
 	return;
 }
 
+/*HTC_START*/
 #if 1
 static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
 	struct msm_sensor_ctrl_t *s_ctrl)
 {
     #define OV4688_LITEON_OTP_SIZE 0x12
+    /*
+    OTP Location
+
+    Burn in times						1st(Layer 0)	2nd(Layer 1)	3rd(Layer 2)
+
+    0 Module vendor 					0x126			0x144			0x162
+    1 LENS								0x127			0x145			0x163
+    2 Sensor Version					0x128			0x146			0x164
+    3 Driver IC Vendor & Version		0x129			0x147			0x165
+    4 Actuator vender ID & Version		0x12A			0x148			0x166
+
+    5 Module ID 						0x110			0x12e			0x14c
+    6 Module ID 						0x111			0x12f			0x14d
+    7 Module ID 						0x112			0x130			0x14e
+
+    8 BAIS Calibration data 			0x12b			0x149			0x167
+    9 OFFSET Calibration data			0x12c			0x14a			0x168
+    a VCM bottom mech. Limit (MSByte)	0x11e			0x13c			0x15a
+    b VCM bottom mech. Limit (LSByte)	0x11f			0x13d			0x15b
+    c Infinity position code (MSByte)	0x120			0x13e			0x15c
+    d Infinity position code (LSByte)	0x121			0x13f			0x15d
+    e Macro position code (MSByte)		0x122			0x140			0x15e
+    f Macro position code (LSByte)		0x123			0x141			0x15f
+    10 VCM top mech. Limit (MSByte		0x124			0x142			0x160
+    11 VCM top mech. Limit (LSByte) 	0x125			0x143			0x161
+    */
 
     const short addr[3][OV4688_LITEON_OTP_SIZE] = {
-        
-        {0x126,0x127,0x128,0x129,0x12a,0x110,0x111,0x112,0x12b,0x12c,0x11e,0x11f,0x120,0x121,0x122,0x123,0x124,0x125}, 
-        {0x144,0x145,0x146,0x147,0x148,0x12e,0x12f,0x130,0x149,0x14a,0x13c,0x13d,0x13e,0x13f,0x140,0x141,0x142,0x143}, 
-        {0x162,0x163,0x164,0x165,0x166,0x14c,0x14d,0x14e,0x167,0x168,0x15a,0x15b,0x15c,0x15d,0x15e,0x15f,0x160,0x161}, 
+        //0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    a,    b,    c,    d,    e,    f,   10,   11
+        {0x126,0x127,0x128,0x129,0x12a,0x110,0x111,0x112,0x12b,0x12c,0x11e,0x11f,0x120,0x121,0x122,0x123,0x124,0x125}, // layer 1
+        {0x144,0x145,0x146,0x147,0x148,0x12e,0x12f,0x130,0x149,0x14a,0x13c,0x13d,0x13e,0x13f,0x140,0x141,0x142,0x143}, // layer 2
+        {0x162,0x163,0x164,0x165,0x166,0x14c,0x14d,0x14e,0x167,0x168,0x15a,0x15b,0x15c,0x15d,0x15e,0x15f,0x160,0x161}, // layer 3
     };
     static uint8_t otp[OV4688_LITEON_OTP_SIZE];
 	static int first= true;
@@ -274,10 +301,12 @@ static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
     uint16_t addr_start=0x7000;
     uint16_t addr_end=0x71ff;
 
+//HTC_START , move read OTP to sensor probe
 	if (first) {
+//HTC_END
 	    first = false;
 
-        
+        /*Must finish the recommend settings before otp read*/
 
         if (rc < 0)
             pr_info("%s: i2c_write recommend settings fail\n", __func__);
@@ -304,12 +333,12 @@ static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
 
         msleep(10);
 
-        
+        // start from layer 2
         for (j=2; j>=0; j--)
         {
             for (i=0; i<OV4688_LITEON_OTP_SIZE; ++i)
             {
-                rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, addr[j][i]+offset, &read_data, MSM_CAMERA_I2C_BYTE_DATA);
+                rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, addr[j][i]+offset, &read_data, MSM_CAMERA_I2C_BYTE_DATA);//0x37c2
                 if (rc < 0)
                 {
                     pr_err("%s: i2c_read 0x%x failed\n", __func__, addr[j][i]);
@@ -334,8 +363,10 @@ static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
             pr_info("%s: i2c_write b 0x0100 fail\n", __func__);
     }
 
+//HTC_START , move read OTP to sensor probe
     if(cdata != NULL)
     {
+//HTC_END
     cdata->cfg.fuse.fuse_id_word1 = 0;
     cdata->cfg.fuse.fuse_id_word2 = otp[5];
     cdata->cfg.fuse.fuse_id_word3 = otp[6];
@@ -351,6 +382,7 @@ static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
     pr_info("%s: OTP fuse 1 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word2);
     pr_info("%s: OTP fuse 2 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word3);
     pr_info("%s: OTP fuse 3 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word4);
+//HTC_START , move read OTP to sensor probe
 	}
 	else
 	{
@@ -360,6 +392,7 @@ static int ov4688_read_fuseid(struct sensorb_cfg_data *cdata,
 	    pr_info("%s: OTP Driver IC Vendor & Version = 0x%x\n",  __func__,  otp[3]);
 	    pr_info("%s: OTP Actuator vender ID & Version = 0x%x\n",__func__,  otp[4]);
 	}
+//HTC_END
 	return rc;
 }
 
@@ -367,12 +400,38 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
 	struct msm_sensor_ctrl_t *s_ctrl)
 {
     #define OV4688_LITEON_OTP_SIZE 0x12
+    /*
+    OTP Location
+
+    Burn in times						1st(Layer 0)	2nd(Layer 1)	3rd(Layer 2)
+
+    0 Module vendor 					0x126			0x144			0x162
+    1 LENS								0x127			0x145			0x163
+    2 Sensor Version					0x128			0x146			0x164
+    3 Driver IC Vendor & Version		0x129			0x147			0x165
+    4 Actuator vender ID & Version		0x12A			0x148			0x166
+
+    5 Module ID 						0x110			0x12e			0x14c
+    6 Module ID 						0x111			0x12f			0x14d
+    7 Module ID 						0x112			0x130			0x14e
+
+    8 BAIS Calibration data 			0x12b			0x149			0x167
+    9 OFFSET Calibration data			0x12c			0x14a			0x168
+    a VCM bottom mech. Limit (MSByte)	0x11e			0x13c			0x15a
+    b VCM bottom mech. Limit (LSByte)	0x11f			0x13d			0x15b
+    c Infinity position code (MSByte)	0x120			0x13e			0x15c
+    d Infinity position code (LSByte)	0x121			0x13f			0x15d
+    e Macro position code (MSByte)		0x122			0x140			0x15e
+    f Macro position code (LSByte)		0x123			0x141			0x15f
+    10 VCM top mech. Limit (MSByte		0x124			0x142			0x160
+    11 VCM top mech. Limit (LSByte) 	0x125			0x143			0x161
+    */
 
     const short addr[3][OV4688_LITEON_OTP_SIZE] = {
-        
-        {0x126,0x127,0x128,0x129,0x12a,0x110,0x111,0x112,0x12b,0x12c,0x11e,0x11f,0x120,0x121,0x122,0x123,0x124,0x125}, 
-        {0x144,0x145,0x146,0x147,0x148,0x12e,0x12f,0x130,0x149,0x14a,0x13c,0x13d,0x13e,0x13f,0x140,0x141,0x142,0x143}, 
-        {0x162,0x163,0x164,0x165,0x166,0x14c,0x14d,0x14e,0x167,0x168,0x15a,0x15b,0x15c,0x15d,0x15e,0x15f,0x160,0x161}, 
+        //0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    a,    b,    c,    d,    e,    f,   10,   11
+        {0x126,0x127,0x128,0x129,0x12a,0x110,0x111,0x112,0x12b,0x12c,0x11e,0x11f,0x120,0x121,0x122,0x123,0x124,0x125}, // layer 1
+        {0x144,0x145,0x146,0x147,0x148,0x12e,0x12f,0x130,0x149,0x14a,0x13c,0x13d,0x13e,0x13f,0x140,0x141,0x142,0x143}, // layer 2
+        {0x162,0x163,0x164,0x165,0x166,0x14c,0x14d,0x14e,0x167,0x168,0x15a,0x15b,0x15c,0x15d,0x15e,0x15f,0x160,0x161}, // layer 3
     };
     static uint8_t otp[OV4688_LITEON_OTP_SIZE];
 	static int first= true;
@@ -385,10 +444,12 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
     uint16_t addr_start=0x7000;
     uint16_t addr_end=0x71ff;
 
+//HTC_START , move read OTP to sensor probe
 	if (first) {
+//HTC_END
 	    first = false;
 
-        
+        /*Must finish the recommend settings before otp read*/
 
         if (rc < 0)
             pr_info("%s: i2c_write recommend settings fail\n", __func__);
@@ -415,12 +476,12 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
 
         msleep(10);
 
-        
+        // start from layer 2
         for (j=2; j>=0; j--)
         {
             for (i=0; i<OV4688_LITEON_OTP_SIZE; ++i)
             {
-                rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, addr[j][i]+offset, &read_data, MSM_CAMERA_I2C_BYTE_DATA);
+                rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, addr[j][i]+offset, &read_data, MSM_CAMERA_I2C_BYTE_DATA);//0x37c2
                 if (rc < 0)
                 {
                     pr_err("%s: i2c_read 0x%x failed\n", __func__, addr[j][i]);
@@ -445,8 +506,10 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
             pr_info("%s: i2c_write b 0x0100 fail\n", __func__);
     }
 
+//HTC_START , move read OTP to sensor probe
     if(cdata != NULL)
     {
+//HTC_END
     cdata->cfg.fuse.fuse_id_word1 = 0;
     cdata->cfg.fuse.fuse_id_word2 = otp[5];
     cdata->cfg.fuse.fuse_id_word3 = otp[6];
@@ -462,6 +525,7 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
     pr_info("%s: OTP fuse 1 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word2);
     pr_info("%s: OTP fuse 2 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word3);
     pr_info("%s: OTP fuse 3 = 0x%x\n", __func__,  cdata->cfg.fuse.fuse_id_word4);
+//HTC_START , move read OTP to sensor probe
 	}
 	else
 	{
@@ -471,10 +535,12 @@ static int ov4688_read_fuseid32(struct sensorb_cfg_data32 *cdata,
 	    pr_info("%s: OTP Driver IC Vendor & Version = 0x%x\n",  __func__,  otp[3]);
 	    pr_info("%s: OTP Actuator vender ID & Version = 0x%x\n",__func__,  otp[4]);
 	}
+//HTC_END
 	return rc;
 }
 
 
+//HTC_START , move read OTP to sensor probe
 int32_t ov4688_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t rc = 0;
@@ -494,6 +560,7 @@ int32_t ov4688_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	}
 	return rc;
 }
+//HTC_END
 #endif
 
 static struct msm_sensor_fn_t ov4688_sensor_func_tbl = {
@@ -501,12 +568,13 @@ static struct msm_sensor_fn_t ov4688_sensor_func_tbl = {
 	.sensor_config32 = msm_sensor_config32,
 	.sensor_power_up = msm_sensor_power_up,
 	.sensor_power_down = msm_sensor_power_down,
-    
+    //HTC_START , move read OTP to sensor probe
 	.sensor_match_id = ov4688_sensor_match_id,
 	.sensor_i2c_read_fuseid = ov4688_read_fuseid,
 	.sensor_i2c_read_fuseid32 = ov4688_read_fuseid32,
-	
+	//HTC_END
 };
+/*HTC_END*/
 
 static struct msm_sensor_ctrl_t ov4688_s_ctrl = {
 	.sensor_i2c_client = &ov4688_sensor_i2c_client,

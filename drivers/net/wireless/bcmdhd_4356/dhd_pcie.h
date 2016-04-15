@@ -246,5 +246,9 @@ extern void dhdpcie_oob_intr_unregister(dhd_bus_t *bus);
 extern void dhdpcie_oob_intr_set(dhd_bus_t *bus, bool enable);
 #endif 
 
+#ifdef SUPPORT_LINKDOWN_RECOVERY
+extern void dhdpcie_link_recovery(dhd_bus_t *bus);
+#endif 
+
 extern int dhd_buzzz_dump_dngl(dhd_bus_t *bus);
 #endif 

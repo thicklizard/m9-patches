@@ -890,6 +890,40 @@ dhdpcie_isr(int irq, void *arg)
 		return FALSE;
 }
 
+#ifdef SUPPORT_LINKDOWN_RECOVERY
+void
+dhdpcie_link_recovery(dhd_bus_t *bus)
+{
+	int ret = 0;
+
+	DHD_ERROR(("%s Enter:\n", __FUNCTION__));
+#if 0
+	if (!bus->islinkdown) {
+		DHD_ERROR(("%s: not linkdown. skip\n", __FUNCTION__));
+		return;
+	}
+#endif
+	ret = msm_pcie_pm_control(MSM_PCIE_SUSPEND, bus->dev->bus->number,
+		bus->dev, NULL, MSM_PCIE_CONFIG_NO_CFG_RESTORE | MSM_PCIE_CONFIG_LINKDOWN);
+	if (ret) {
+		DHD_ERROR(("%s: msm_pcie_pm_control suspend failed. %d\n", __FUNCTION__, ret));
+		return;
+	}
+
+	msleep(10);
+
+	ret = msm_pcie_pm_control(MSM_PCIE_RESUME, bus->dev->bus->number,
+			bus->dev, NULL, MSM_PCIE_CONFIG_NO_CFG_RESTORE);
+	if (ret) {
+		DHD_ERROR(("%s: msm_pcie_pm_control resume failed. %d\n", __FUNCTION__, ret));
+	} else {
+		DHD_ERROR(("%s call msm_pcie_recover_config\n", __FUNCTION__));
+		msm_pcie_recover_config(bus->dev);
+		bus->islinkdown = FALSE;
+	}
+}
+#endif 
+
 int
 dhdpcie_start_host_pcieclock(dhd_bus_t *bus)
 {

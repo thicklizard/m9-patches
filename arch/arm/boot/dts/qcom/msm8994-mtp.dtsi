@@ -886,6 +886,7 @@
 		qcom,batt-id-range-pct = <15>;
 		#include "batterydata-hima-id1.dtsi"
 		#include "batterydata-hima-id2.dtsi"
+		#include "batterydata-b3-id1.dtsi"
 		#include "batterydata-hima-unknown.dtsi"
 	};
 };

@@ -216,8 +216,9 @@ static void dhd_prot_process_flow_ring_create_response(dhd_pub_t *dhd, void* buf
 static void dhd_prot_process_flow_ring_delete_response(dhd_pub_t *dhd, void* buf, uint16 msglen);
 static void dhd_prot_process_flow_ring_flush_response(dhd_pub_t *dhd, void* buf, uint16 msglen);
 
-
-
+#ifdef SUPPORT_LINKDOWN_RECOVERY
+void dhdpcie_link_recovery(dhd_bus_t *bus);
+#endif 
 
 #ifdef DHD_RX_CHAINING
 #define PKT_CTF_CHAINABLE(dhd, ifidx, evh, prio, h_sa, h_da, h_prio) \

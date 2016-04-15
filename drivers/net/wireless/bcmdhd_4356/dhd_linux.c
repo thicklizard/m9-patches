@@ -9209,6 +9209,9 @@ static void dhd_hang_process(void *dhd_info, void *event_info, u8 event)
 {
 	dhd_info_t *dhd;
 	struct net_device *dev;
+#if defined(PCIE_FULL_DONGLE)
+	dhd_pub_t *dhdp = NULL;
+#endif
 	dhd = (dhd_info_t *)dhd_info;
 	dev = dhd->iflist[0]->net;
 
@@ -9225,6 +9228,18 @@ static void dhd_hang_process(void *dhd_info, void *event_info, u8 event)
 			DHD_ERROR(("%s beforce hang OTP is empty \n", __FUNCTION__));
 		
 		dhd->pub.busstate = DHD_BUS_DOWN;
+
+
+#if defined(PCIE_FULL_DONGLE)
+		dhdp = &dhd->pub;
+		if (dhdp) {
+			if (!dhdp->dongle_trap_occured) {
+				
+				dhd_bus_recovery(dhdp);
+			}
+		}
+#endif 
+
 #else
 		rtnl_lock();
 		dev_close(dev);
