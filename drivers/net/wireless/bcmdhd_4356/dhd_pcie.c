@@ -2185,13 +2185,6 @@ static ulong dhd_bus_cmn_check_offset(dhd_bus_t *bus, ulong offset)
 void
 dhdpcie_bus_wtcm8(dhd_bus_t *bus, ulong offset, uint8 data)
 {
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return;
-	}
-#endif 
 	*(volatile uint8 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)) = (uint8)data;
 }
 
@@ -2199,13 +2192,6 @@ uint8
 dhdpcie_bus_rtcm8(dhd_bus_t *bus, ulong offset)
 {
 	volatile uint8 data;
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return -1;
-	}
-#endif 
 #ifdef BCM47XX_ACP_WAR
 	data = R_REG(bus->dhd->osh,
 	    (volatile uint8 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)));
@@ -2218,40 +2204,16 @@ dhdpcie_bus_rtcm8(dhd_bus_t *bus, ulong offset)
 void
 dhdpcie_bus_wtcm32(dhd_bus_t *bus, ulong offset, uint32 data)
 {
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 3)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return;
-	}
-#endif 
 	*(volatile uint32 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)) = (uint32)data;
 }
 void
 dhdpcie_bus_wtcm16(dhd_bus_t *bus, ulong offset, uint16 data)
 {
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 1)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return;
-	}
-#endif 
 	*(volatile uint16 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)) = (uint16)data;
 }
 void
 dhdpcie_bus_wtcm64(dhd_bus_t *bus, ulong offset, uint64 data)
 {
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 7)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return;
-	}
-#endif 
 	*(volatile uint64 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)) = (uint64)data;
 }
 
@@ -2259,14 +2221,6 @@ uint16
 dhdpcie_bus_rtcm16(dhd_bus_t *bus, ulong offset)
 {
 	volatile uint16 data;
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 1)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return -1;
-	}
-#endif 
 #ifdef BCM47XX_ACP_WAR
 	data = R_REG(bus->dhd->osh,
 	    (volatile uint16 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)));
@@ -2280,14 +2234,6 @@ uint32
 dhdpcie_bus_rtcm32(dhd_bus_t *bus, ulong offset)
 {
 	volatile uint32 data;
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 3)) {
-		DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-			__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return -1;
-	}
-#endif 
 #ifdef BCM47XX_ACP_WAR
 	data = R_REG(bus->dhd->osh,
 	    (volatile uint32 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)));
@@ -2301,14 +2247,6 @@ uint64
 dhdpcie_bus_rtcm64(dhd_bus_t *bus, ulong offset)
 {
 	volatile uint64 data;
-#ifdef CUSTOMER_HW_ONE
-	if (!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset) ||
-		!PHYSADDRISPCIE(pci_resource_start(bus->dev, 2) + offset + 7)) {
-			DHD_ERROR(("%s: invalid addr=%llx, size=%zd\n",
-				__FUNCTION__, pci_resource_start(bus->dev, 2) + offset, sizeof(data)));
-		return -1;
-	}
-#endif 
 #ifdef BCM47XX_ACP_WAR
 	data = R_REG(bus->dhd->osh,
 	    (volatile uint64 *)(bus->tcm + dhd_bus_cmn_check_offset(bus, offset)));
@@ -2872,14 +2810,6 @@ pcie2_mdioop(dhd_bus_t *bus, uint physmedia, uint regaddr, bool write, uint *val
 		i++;
 	}
 	return -1;
-}
-
-void dhd_bus_recovery(dhd_pub_t *dhdpub)
-{
-	dhd_bus_t *bus = dhdpub->bus;
-
-	if (bus)
-		dhdpcie_link_recovery(bus);
 }
 
 int dhd_bus_suspend(dhd_pub_t *dhdpub)

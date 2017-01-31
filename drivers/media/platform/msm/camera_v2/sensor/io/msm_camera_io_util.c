@@ -584,10 +584,10 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int gpio_en)
 {
 	int rc = 0, i = 0, err = 0;
-	//HTC_START, Avoid control the same GPIO in multiple sensors.
-	static int gpio_859_index = 0;   //VANA
-	static int gpio_863_index = 0;   //VDIG
-	//HTC_END
+	
+	static int gpio_859_index = 0;   
+	static int gpio_863_index = 0;   
+	
 
 	if (!gpio_tbl || !size) {
 		pr_err("%s:%d invalid gpio_tbl %p / size %d\n", __func__,
@@ -600,7 +600,7 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	}
 	if (gpio_en) {
 		for (i = 0; i < size; i++) {
-			//HTC_START, Avoid control the same GPIO in multiple sensors.
+			
 			if(gpio_tbl[i].gpio ==  859)
 			{
 				gpio_859_index ++;
@@ -622,22 +622,17 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 					pr_info("%s:%d already request gpio_863_index:%d\n", __func__,__LINE__, gpio_863_index);
 			}
 			else
-			//HTC_END
+			
 			err = gpio_request_one(gpio_tbl[i].gpio,
 				gpio_tbl[i].flags, gpio_tbl[i].label);
 			if (err) {
-				/*
-				* After GPIO request fails, contine to
-				* apply new gpios, outout a error message
-				* for driver bringup debug
-				*/
 				pr_err("%s:%d gpio %d:%s request fails\n",
 					__func__, __LINE__,
 					gpio_tbl[i].gpio, gpio_tbl[i].label);
 			}
 		}
 	} else {
-		//HTC_START, Avoid control the same GPIO in multiple sensors.
+		
 		#if 1
 		for (i = 0; i < size; i++)
 		{
@@ -657,11 +652,11 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 				gpio_free(gpio_tbl[i].gpio);
 		}
 		#else
-		//HTC_END
+		
 		gpio_free_array(gpio_tbl, size);
-		//HTC_START, Avoid control the same GPIO in multiple sensors.
+		
 		#endif
-		//HTC_END
+		
 	}
 	return rc;
 }

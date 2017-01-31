@@ -690,7 +690,7 @@ TRACE_EVENT(f2fs_write_checkpoint,
 		__entry->msg)
 );
 
-#endif /* _TRACE_F2FS_H */
+#endif 
 
- /* This part must be outside protection */
+ 
 #include <trace/define_trace.h>
