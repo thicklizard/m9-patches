@@ -129,7 +129,7 @@
 
 #define IPA_HW_TABLE_ALIGNMENT(start_ofst) \
 	(((start_ofst) + 127) & ~127)
-#define IPA_RT_FLT_HW_RULE_BUF_SIZE	(128)
+#define IPA_RT_FLT_HW_RULE_BUF_SIZE	(256)
 
 #define IPA_HDR_PROC_CTX_TABLE_ALIGNMENT_BYTE 8
 #define IPA_HDR_PROC_CTX_TABLE_ALIGNMENT(start_ofst) \
@@ -1017,6 +1017,8 @@ struct ipa_uc_wdi_ctx {
 	struct dma_pool *wdi_dma_pool;
 	u32 wdi_uc_stats_ofst;
 	struct IpaHwStatsWDIInfoData_t *wdi_uc_stats_mmio;
+	void *priv;
+	ipa_uc_ready_cb uc_ready_cb;
 };
 
 /**
@@ -1029,6 +1031,16 @@ struct ipa_sps_pm {
 	spinlock_t lock;
 	bool res_granted;
 	bool res_rel_in_prog;
+};
+
+/**
+ * struct ipacm_client_info - the client-info indicated from IPACM
+ * @ipacm_client_enum: the enum to indicate tether-client
+ * @ipacm_client_uplink: the bool to indicate pipe for uplink
+ */
+struct ipacm_client_info {
+	enum ipacm_client_enum client_enum;
+	bool uplink;
 };
 
 /**
@@ -1188,6 +1200,8 @@ struct ipa_context {
 
 	struct ipa_uc_wdi_ctx uc_wdi_ctx;
 	u32 wan_rx_ring_size;
+	/* M-release support to know client pipes */
+	struct ipacm_client_info ipacm_client[IPA_NUM_PIPES];
 };
 
 /**
@@ -1343,6 +1357,15 @@ struct ipa_controller {
 
 extern struct ipa_context *ipa_ctx;
 
+/*
+ * Tethering client info
+ */
+void ipa_set_client(int index, enum ipacm_client_enum client, bool uplink);
+
+enum ipacm_client_enum ipa_get_client(int pipe_idx);
+
+bool ipa_get_client_uplink(int pipe_idx);
+
 int ipa_send_one(struct ipa_sys_context *sys, struct ipa_desc *desc,
 		bool in_atomic);
 int ipa_send(struct ipa_sys_context *sys, u32 num_desc, struct ipa_desc *desc,
@@ -1493,6 +1516,7 @@ int ipa_tag_process(struct ipa_desc *desc, int num_descs,
 		    unsigned long timeout);
 
 int ipa_q6_cleanup(void);
+int ipa_q6_pipe_reset(void);
 int ipa_init_q6_smem(void);
 
 int ipa_sps_connect_safe(struct sps_pipe *h, struct sps_connect *connect,
@@ -1503,6 +1527,7 @@ int ipa_mhi_handle_ipa_config_req(struct ipa_config_req_msg_v01 *config_req);
 int ipa_uc_interface_init(void);
 int ipa_uc_reset_pipe(enum ipa_client_type ipa_client);
 int ipa_uc_state_check(void);
+int ipa_uc_loaded_check(void);
 int ipa_uc_send_cmd(u32 cmd, u32 opcode, u32 expected_status,
 		    bool polling_mode, unsigned long timeout_jiffies);
 void ipa_register_panic_hdlr(void);
@@ -1528,4 +1553,5 @@ int ipa_uc_mhi_resume_channel(int channelHandle, bool LPTransitionRejected);
 int ipa_uc_mhi_stop_event_update_channel(int channelHandle);
 int ipa_uc_mhi_print_stats(char *dbg_buff, int size);
 int ipa_uc_memcpy(phys_addr_t dest, phys_addr_t src, int len);
+void ipa_sps_irq_rx_notify_all(void);
 #endif /* _IPA_I_H_ */

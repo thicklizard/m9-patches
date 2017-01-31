@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -25,6 +25,16 @@
 #define IPA_NAT_SHARED_MEMORY  1
 #define IPA_NAT_TEMP_MEM_SIZE 128
 
+enum nat_table_type {
+	IPA_NAT_BASE_TBL = 0,
+	IPA_NAT_EXPN_TBL = 1,
+	IPA_NAT_INDX_TBL = 2,
+	IPA_NAT_INDEX_EXPN_TBL = 3,
+};
+
+#define NAT_TABLE_ENTRY_SIZE_BYTE 32
+#define NAT_INTEX_TABLE_ENTRY_SIZE_BYTE 4
+
 static int ipa_nat_vma_fault_remap(
 	 struct vm_area_struct *vma, struct vm_fault *vmf)
 {
@@ -34,6 +44,7 @@ static int ipa_nat_vma_fault_remap(
 	return VM_FAULT_SIGBUS;
 }
 
+/* VMA related file operations functions */
 static struct vm_operations_struct ipa_nat_remap_vm_ops = {
 	.fault = ipa_nat_vma_fault_remap,
 };
@@ -113,6 +124,11 @@ static const struct file_operations ipa_nat_fops = {
 	.mmap = ipa_nat_mmap
 };
 
+/**
+ * allocate_temp_nat_memory() - Allocates temp nat memory
+ *
+ * Called during nat table delete
+ */
 void allocate_temp_nat_memory(void)
 {
 	struct ipa_nat_mem *nat_ctx = &(ipa_ctx->nat_mem);
@@ -133,6 +149,13 @@ void allocate_temp_nat_memory(void)
 	return;
 }
 
+/**
+ * create_nat_device() - Create the NAT device
+ *
+ * Called during ipa init to create nat device
+ *
+ * Returns:	0 on success, negative on failure
+ */
 int create_nat_device(void)
 {
 	struct ipa_nat_mem *nat_ctx = &(ipa_ctx->nat_mem);
@@ -208,6 +231,15 @@ bail:
 	return result;
 }
 
+/**
+ * allocate_nat_device() - Allocates memory for the NAT device
+ * @mem:	[in/out] memory parameters
+ *
+ * Called by NAT client driver to allocate memory for the NAT entries. Based on
+ * the request size either shared or system memory will be used.
+ *
+ * Returns:	0 on success, negative on failure
+ */
 int allocate_nat_device(struct ipa_ioc_nat_alloc_mem *mem)
 {
 	struct ipa_nat_mem *nat_ctx = &(ipa_ctx->nat_mem);
@@ -270,6 +302,15 @@ bail:
 	return result;
 }
 
+/* IOCTL function handlers */
+/**
+ * ipa_nat_init_cmd() - Post IP_V4_NAT_INIT command to IPA HW
+ * @init:	[in] initialization command attributes
+ *
+ * Called by NAT client driver to post IP_V4_NAT_INIT command to IPA HW
+ *
+ * Returns:	0 on success, negative on failure
+ */
 int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 {
 #define TBL_ENTRY_SIZE 32
@@ -289,12 +330,14 @@ int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 		return -EPERM;
 	}
 
-	
+	/* check for integer overflow */
 	if (init->ipv4_rules_offset >
 		UINT_MAX - (TBL_ENTRY_SIZE * (init->table_entries + 1))) {
 			IPAERR("Detected overflow\n");
 			return -EPERM;
 	}
+	/* Check Table Entry offset is not
+	   beyond allocated size */
 	tmp = init->ipv4_rules_offset +
 		(TBL_ENTRY_SIZE * (init->table_entries + 1));
 	if (tmp > ipa_ctx->nat_mem.size) {
@@ -305,12 +348,14 @@ int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 		return -EPERM;
 	}
 
-	
+	/* check for integer overflow */
 	if (init->expn_rules_offset >
 		UINT_MAX - (TBL_ENTRY_SIZE * init->expn_table_entries)) {
 			IPAERR("Detected overflow\n");
 			return -EPERM;
 	}
+	/* Check Expn Table Entry offset is not
+	   beyond allocated size */
 	tmp = init->expn_rules_offset +
 		(TBL_ENTRY_SIZE * init->expn_table_entries);
 	if (tmp > ipa_ctx->nat_mem.size) {
@@ -321,12 +366,14 @@ int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 		return -EPERM;
 	}
 
-  
+  /* check for integer overflow */
 	if (init->index_offset >
 		UINT_MAX - (INDX_TBL_ENTRY_SIZE * (init->table_entries + 1))) {
 			IPAERR("Detected overflow\n");
 			return -EPERM;
 	}
+	/* Check Indx Table Entry offset is not
+	   beyond allocated size */
 	tmp = init->index_offset +
 		(INDX_TBL_ENTRY_SIZE * (init->table_entries + 1));
 	if (tmp > ipa_ctx->nat_mem.size) {
@@ -337,12 +384,14 @@ int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 		return -EPERM;
 	}
 
-  
+  /* check for integer overflow */
 	if (init->index_expn_offset >
 		UINT_MAX - (INDX_TBL_ENTRY_SIZE * init->expn_table_entries)) {
 			IPAERR("Detected overflow\n");
 			return -EPERM;
 	}
+	/* Check Expn Table entry offset is not
+	   beyond allocated size */
 	tmp = init->index_expn_offset +
 		(INDX_TBL_ENTRY_SIZE * init->expn_table_entries);
 	if (tmp > ipa_ctx->nat_mem.size) {
@@ -354,7 +403,7 @@ int ipa_nat_init_cmd(struct ipa_ioc_v4_nat_init *init)
 	}
 
 	memset(&desc, 0, sizeof(desc));
-	
+	/* NO-OP IC for ensuring that IPA pipeline is empty */
 	reg_write_nop = kzalloc(sizeof(*reg_write_nop), GFP_KERNEL);
 	if (!reg_write_nop) {
 		IPAERR("no mem\n");
@@ -501,6 +550,14 @@ bail:
 	return result;
 }
 
+/**
+ * ipa_nat_dma_cmd() - Post NAT_DMA command to IPA HW
+ * @dma:	[in] initialization command attributes
+ *
+ * Called by NAT client driver to post NAT_DMA command to IPA HW
+ *
+ * Returns:	0 on success, negative on failure
+ */
 int ipa_nat_dma_cmd(struct ipa_ioc_nat_dma_cmd *dma)
 {
 	struct ipa_nat_dma *cmd = NULL;
@@ -513,6 +570,71 @@ int ipa_nat_dma_cmd(struct ipa_ioc_nat_dma_cmd *dma)
 		IPADBG("Invalid number of commands\n");
 		ret = -EPERM;
 		goto bail;
+	}
+
+	for (cnt = 0; cnt < dma->entries; cnt++) {
+		if (dma->dma[cnt].table_index >= 1) {
+			IPAERR("Invalid table index %d\n",
+				dma->dma[cnt].table_index);
+			ret = -EPERM;
+			goto bail;
+		}
+
+		switch (dma->dma[cnt].base_addr) {
+		case IPA_NAT_BASE_TBL:
+			if (dma->dma[cnt].offset >=
+				(ipa_ctx->nat_mem.size_base_tables + 1) *
+				NAT_TABLE_ENTRY_SIZE_BYTE) {
+				IPAERR("Invalid offset %d\n",
+					dma->dma[cnt].offset);
+				ret = -EPERM;
+				goto bail;
+			}
+
+			break;
+
+		case IPA_NAT_EXPN_TBL:
+			if (dma->dma[cnt].offset >=
+				ipa_ctx->nat_mem.size_expansion_tables *
+				NAT_TABLE_ENTRY_SIZE_BYTE) {
+				IPAERR("Invalid offset %d\n",
+					dma->dma[cnt].offset);
+				ret = -EPERM;
+				goto bail;
+			}
+
+			break;
+
+		case IPA_NAT_INDX_TBL:
+			if (dma->dma[cnt].offset >=
+				(ipa_ctx->nat_mem.size_base_tables + 1) *
+				NAT_INTEX_TABLE_ENTRY_SIZE_BYTE) {
+				IPAERR("Invalid offset %d\n",
+					dma->dma[cnt].offset);
+				ret = -EPERM;
+				goto bail;
+			}
+
+			break;
+
+		case IPA_NAT_INDEX_EXPN_TBL:
+			if (dma->dma[cnt].offset >=
+				ipa_ctx->nat_mem.size_expansion_tables *
+				NAT_INTEX_TABLE_ENTRY_SIZE_BYTE) {
+				IPAERR("Invalid offset %d\n",
+					dma->dma[cnt].offset);
+				ret = -EPERM;
+				goto bail;
+			}
+
+			break;
+
+		default:
+			IPAERR("Invalid base_addr %d\n",
+				dma->dma[cnt].base_addr);
+			ret = -EPERM;
+			goto bail;
+		}
 	}
 	size = sizeof(struct ipa_desc) * dma->entries;
 	desc = kzalloc(size, GFP_KERNEL);
@@ -555,6 +677,12 @@ bail:
 	return ret;
 }
 
+/**
+ * ipa_nat_free_mem_and_device() - free the NAT memory and remove the device
+ * @nat_ctx:	[in] the IPA NAT memory to free
+ *
+ * Called by NAT client driver to free the NAT memory and remove the device
+ */
 void ipa_nat_free_mem_and_device(struct ipa_nat_mem *nat_ctx)
 {
 	IPADBG("\n");
@@ -577,6 +705,14 @@ void ipa_nat_free_mem_and_device(struct ipa_nat_mem *nat_ctx)
 	return;
 }
 
+/**
+ * ipa_nat_del_cmd() - Delete a NAT table
+ * @del:	[in] delete table table table parameters
+ *
+ * Called by NAT client driver to delete the nat table
+ *
+ * Returns:	0 on success, negative on failure
+ */
 int ipa_nat_del_cmd(struct ipa_ioc_v4_nat_del *del)
 {
 	struct ipa_register_write *reg_write_nop;
@@ -601,7 +737,7 @@ int ipa_nat_del_cmd(struct ipa_ioc_v4_nat_del *del)
 	}
 
 	memset(&desc, 0, sizeof(desc));
-	
+	/* NO-OP IC for ensuring that IPA pipeline is empty */
 	reg_write_nop = kzalloc(sizeof(*reg_write_nop), GFP_KERNEL);
 	if (!reg_write_nop) {
 		IPAERR("no mem\n");

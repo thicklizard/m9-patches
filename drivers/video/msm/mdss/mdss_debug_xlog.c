@@ -28,9 +28,9 @@
 #define XLOG_DEFAULT_ENABLE 0
 #endif
 
-#define XLOG_DEFAULT_PANIC 1
-#define XLOG_DEFAULT_REGDUMP 0x2 
-#define XLOG_DEFAULT_DBGBUSDUMP 0x3 
+#define XLOG_DEFAULT_PANIC 0 /* HTC: disable panic */
+#define XLOG_DEFAULT_REGDUMP 0x2 /* dump in RAM */
+#define XLOG_DEFAULT_DBGBUSDUMP 0x3 /* dump in LOG & RAM */
 
 #define MDSS_XLOG_ENTRY	256
 #define MDSS_XLOG_MAX_DATA 6
@@ -61,7 +61,7 @@ struct mdss_dbg_xlog {
 	struct mdss_debug_base *blk_arr[MDSS_DEBUG_BASE_MAX];
 	bool work_panic;
 	bool work_dbgbus;
-	u32 *dbgbus_dump; 
+	u32 *dbgbus_dump; /* address for the debug bus dump */
 } mdss_dbg_xlog;
 
 static inline bool mdss_xlog_is_enabled(u32 flag)
@@ -107,6 +107,7 @@ void mdss_xlog(const char *name, int line, int flag, ...)
 	spin_unlock_irqrestore(&xlock, flags);
 }
 
+/* always dump the last entries which are not dumped yet */
 static bool __mdss_xlog_dump_calc_range(void)
 {
 	static u32 next;
@@ -221,7 +222,7 @@ static void mdss_dump_debug_bus(u32 bus_dump_flag,
 	if (!(mdata->dbg_bus && list_size))
 		return;
 
-	
+	/* will keep in memory 4 entries of 4 bytes each */
 	list_size = (list_size * 4 * 4);
 
 	in_log = (bus_dump_flag & MDSS_DBG_DUMP_IN_LOG);
@@ -234,7 +235,7 @@ static void mdss_dump_debug_bus(u32 bus_dump_flag,
 
 		if (*dump_mem) {
 			dump_addr = *dump_mem;
-			pr_info("bus dump_addr:%p size:%d\n",
+			pr_info("bus dump_addr:%pK size:%d\n",
 				dump_addr, list_size);
 		} else {
 			in_mem = false;
@@ -298,7 +299,7 @@ static void mdss_dump_reg(u32 reg_dump_flag,
 
 		if (*dump_mem) {
 			dump_addr = *dump_mem;
-			pr_info("start_addr:%p end_addr:%p reg_addr=%p\n",
+			pr_info("start_addr:%pK end_addr:%pK reg_addr=%pK\n",
 				dump_addr, dump_addr + (u32)len * 16,
 				addr);
 		} else {
@@ -317,7 +318,7 @@ static void mdss_dump_reg(u32 reg_dump_flag,
 		xc = readl_relaxed(addr+0xc);
 
 		if (in_log)
-			pr_info("%p : %08x %08x %08x %08x\n", addr, x0, x4, x8,
+			pr_info("%pK : %08x %08x %08x %08x\n", addr, x0, x4, x8,
 				xc);
 
 		if (dump_addr && in_mem) {
@@ -346,14 +347,14 @@ static void mdss_dump_reg_by_ranges(struct mdss_debug_base *dbg,
 
 	pr_info("%s:=========%s DUMP=========\n", __func__, dbg->name);
 
-	
+	/* If there is a list to dump the registers by ranges, use the ranges */
 	if (!list_empty(&dbg->dump_list)) {
 		list_for_each_entry_safe(xlog_node, xlog_tmp,
 			&dbg->dump_list, head) {
 			len = get_dump_range(&xlog_node->offset,
 				dbg->max_offset);
 			addr = dbg->base + xlog_node->offset.start;
-			pr_info("%s: range_base=0x%p start=0x%x end=0x%x\n",
+			pr_info("%s: range_base=0x%pK start=0x%x end=0x%x\n",
 				xlog_node->range_name,
 				addr, xlog_node->offset.start,
 				xlog_node->offset.end);
@@ -361,9 +362,9 @@ static void mdss_dump_reg_by_ranges(struct mdss_debug_base *dbg,
 				&xlog_node->reg_dump);
 		}
 	} else {
-		
+		/* If there is no list to dump ranges, dump all registers */
 		pr_info("Ranges not found, will dump full registers");
-		pr_info("base:0x%p len:0x%zu\n", dbg->base, dbg->max_offset);
+		pr_info("base:0x%pK len:0x%zu\n", dbg->base, dbg->max_offset);
 		addr = dbg->base;
 		len = dbg->max_offset;
 		mdss_dump_reg(reg_dump_flag, addr, len, &dbg->reg_dump);
@@ -506,7 +507,7 @@ void mdss_xlog_tout_handler_default(bool enforce_dump, bool queue,
 	va_end(args);
 
 	if (queue) {
-		
+		/* schedule work to dump later */
 		mdss_dbg_xlog.work_panic = dead;
 		mdss_dbg_xlog.work_dbgbus = dump_dbgbus;
 		schedule_work(&mdss_dbg_xlog.xlog_dump_work);
@@ -531,7 +532,7 @@ int mdss_xlog_tout_handler_iommu(struct iommu_domain *domain,
 
 static int mdss_xlog_dump_open(struct inode *inode, struct file *file)
 {
-	
+	/* non-seekable */
 	file->f_mode &= ~(FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE);
 	file->private_data = inode->i_private;
 	return 0;

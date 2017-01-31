@@ -1,4 +1,4 @@
-/* Copyright (c) 2014 - 2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014 - 2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -39,7 +39,7 @@ static inline int msm_dcvs_count_active_instances(struct msm_vidc_core *core)
 	struct msm_vidc_inst *inst = NULL;
 
 	if (!core) {
-		dprintk(VIDC_ERR, "%s: Invalid args: %p\n", __func__, core);
+		dprintk(VIDC_ERR, "%s: Invalid args: %pK\n", __func__, core);
 		return -EINVAL;
 	}
 
@@ -115,7 +115,7 @@ static void msm_dcvs_dec_check_and_scale_clocks(struct msm_vidc_inst *inst)
 void msm_dcvs_check_and_scale_clocks(struct msm_vidc_inst *inst, bool is_etb)
 {
 	if (!inst) {
-		dprintk(VIDC_ERR, "%s Invalid args: %p\n", __func__, inst);
+		dprintk(VIDC_ERR, "%s Invalid args: %pK\n", __func__, inst);
 		return;
 	}
 
@@ -127,7 +127,7 @@ void msm_dcvs_check_and_scale_clocks(struct msm_vidc_inst *inst, bool is_etb)
 
 static inline int get_pending_bufs_fw(struct msm_vidc_inst *inst)
 {
-	int fw_out_qsize = 0;
+	int fw_out_qsize = 0, buffers_in_driver = 0;
 
 	if (!inst) {
 		dprintk(VIDC_ERR, "%s Invalid args\n", __func__);
@@ -135,10 +135,23 @@ static inline int get_pending_bufs_fw(struct msm_vidc_inst *inst)
 	}
 
 	if (inst->state >= MSM_VIDC_OPEN_DONE &&
-		inst->state < MSM_VIDC_STOP_DONE)
+			inst->state < MSM_VIDC_STOP_DONE) {
+		struct buffer_info *temp = NULL;
+
 		fw_out_qsize = inst->count.ftb - inst->count.fbd;
 
-	return fw_out_qsize;
+		mutex_lock(&inst->registeredbufs.lock);
+		list_for_each_entry(temp, &inst->registeredbufs.list, list) {
+			if (temp->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE &&
+					!temp->inactive &&
+					atomic_read(&temp->ref_count) == 2) {
+				buffers_in_driver++;
+			}
+		}
+		mutex_unlock(&inst->registeredbufs.lock);
+	}
+
+	return fw_out_qsize + buffers_in_driver;
 }
 
 static inline void msm_dcvs_print_dcvs_stats(struct dcvs_stats *dcvs)
@@ -167,7 +180,7 @@ void msm_dcvs_init_load(struct msm_vidc_inst *inst)
 	dprintk(VIDC_DBG, "Init DCVS Load\n");
 
 	if (!inst || !inst->core) {
-		dprintk(VIDC_ERR, "%s Invalid args: %p\n", __func__, inst);
+		dprintk(VIDC_ERR, "%s Invalid args: %pK\n", __func__, inst);
 		return;
 	}
 
@@ -212,7 +225,9 @@ void msm_dcvs_init_load(struct msm_vidc_inst *inst)
 
 	/* calculating the min and max threshold */
 	if (output_buf_req->buffer_count_actual) {
-		dcvs->min_threshold = DCVS_MIN_DISPLAY_BUFF;
+		dcvs->min_threshold = output_buf_req->buffer_count_actual -
+			output_buf_req->buffer_count_min -
+			msm_dcvs_get_extra_buff_count(inst);
 		dcvs->max_threshold = output_buf_req->buffer_count_actual;
 		if (dcvs->max_threshold <= dcvs->min_threshold)
 			dcvs->max_threshold =
@@ -230,7 +245,7 @@ void msm_dcvs_init(struct msm_vidc_inst *inst)
 	dprintk(VIDC_DBG, "Init DCVS Struct\n");
 
 	if (!inst) {
-		dprintk(VIDC_ERR, "%s Invalid args: %p\n", __func__, inst);
+		dprintk(VIDC_ERR, "%s Invalid args: %pK\n", __func__, inst);
 		return;
 	}
 
@@ -247,7 +262,7 @@ void msm_dcvs_monitor_buffer(struct msm_vidc_inst *inst)
 	struct hal_buffer_requirements *output_buf_req;
 
 	if (!inst) {
-		dprintk(VIDC_ERR, "%s Invalid args: %p\n", __func__, inst);
+		dprintk(VIDC_ERR, "%s Invalid args: %pK\n", __func__, inst);
 		return;
 	}
 	dcvs = &inst->dcvs;
@@ -256,7 +271,7 @@ void msm_dcvs_monitor_buffer(struct msm_vidc_inst *inst)
 	output_buf_req = get_buff_req_buffer(inst,
 				msm_comm_get_hal_output_buffer(inst));
 	if (!output_buf_req) {
-		dprintk(VIDC_ERR, "%s : Get output buffer req failed %p\n",
+		dprintk(VIDC_ERR, "%s : Get output buffer req failed %pK\n",
 			__func__, inst);
 		mutex_unlock(&inst->lock);
 		return;
@@ -298,13 +313,13 @@ void msm_dcvs_monitor_buffer(struct msm_vidc_inst *inst)
 		prev_buf_count =
 			dcvs->num_ftb[((dcvs->ftb_index - 2 +
 				DCVS_FTB_WINDOW) % DCVS_FTB_WINDOW)];
-		if (prev_buf_count == DCVS_MIN_DISPLAY_BUFF &&
-			buffers_outside_fw == DCVS_MIN_DISPLAY_BUFF) {
+		if (prev_buf_count == dcvs->threshold_disp_buf_low &&
+			buffers_outside_fw <= dcvs->threshold_disp_buf_low) {
 			dcvs->transition_turbo = true;
-		} else if (buffers_outside_fw > DCVS_MIN_DISPLAY_BUFF &&
+		} else if (buffers_outside_fw > dcvs->threshold_disp_buf_low &&
 			(buffers_outside_fw -
 			 (prev_buf_count - buffers_outside_fw))
-			< DCVS_MIN_DISPLAY_BUFF){
+			< dcvs->threshold_disp_buf_low){
 			dcvs->transition_turbo = true;
 		}
 	}
@@ -491,7 +506,7 @@ bool msm_dcvs_enc_check(struct msm_vidc_inst *inst)
 static int msm_dcvs_check_supported(struct msm_vidc_inst *inst)
 {
 	int rc = 0;
-	int dcvs_2k = 0, dcvs_4k = 0;
+	int dcvs_2k = -ENOTSUPP, dcvs_4k = 0;
 	int num_mbs_per_frame = 0;
 	int instance_count = 0;
 	struct msm_vidc_inst *temp = NULL;

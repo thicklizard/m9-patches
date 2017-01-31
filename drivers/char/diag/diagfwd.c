@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -239,8 +239,7 @@ void chk_logging_wakeup(void)
 /*++ 2014/09/18, USB Team, PCN00002 ++*/
 		if ((driver->data_ready[i] & USERMODE_DIAGFWD) == 0) {
 			driver->data_ready[i] |= USERMODE_DIAGFWD;
-			if (diag7k_debug_mask)
-				DIAG_INFO("diag: Force wakeup of logging process\n");
+			DIAGFWD_DBUG("diag: Force wakeup of logging process\n");
 			wake_up_interruptible(&driver->wait_q);
 		}
 /*-- 2014/09/18, USB Team, PCN00002 --*/
@@ -699,7 +698,7 @@ drop:	/*++ 2015/02/02, USB Team, PCN00002 ++*/
 		if (smd_info->peripheral == MODEM_DATA &&
 			(buf && driver->qxdm2sd_drop && (driver->logging_mode == USB_MODE)
 				&& *((unsigned char *)buf) != 0xc8)) {
-			DIAG_DBUG("%s:Drop the diag payload :%d\n", __func__, retry);
+			DIAGFWD_DBUG("%s:Drop the diag payload :%d\n", __func__, retry);
 			DIAGFWD_7K_RAWDATA(buf, "modem", DIAG_DBG_DROP);
 			total_recd = 0;
 			/* wait 10ms to see any data pending again */
@@ -869,7 +868,7 @@ void diag_update_pkt_buffer(unsigned char *buf, int type)
 	}
 
 	if (!ptr || length == 0) {
-		pr_err("diag: Invalid ptr %p and length %d in %s",
+		pr_err("diag: Invalid ptr %pK and length %d in %s",
 						ptr, length, __func__);
 		return;
 	}
@@ -982,7 +981,7 @@ int diag_process_stm_cmd(unsigned char *buf, unsigned char *dest_buf)
 	int i;
 
 	if (!buf || !dest_buf) {
-		pr_err("diag: Invalid pointers buf: %p, dest_buf %p in %s\n",
+		pr_err("diag: Invalid pointers buf: %pK, dest_buf %pK in %s\n",
 		       buf, dest_buf, __func__);
 		return -EIO;
 	}
@@ -1070,7 +1069,7 @@ int diag_cmd_log_on_demand(unsigned char *src_buf, int src_len,
 		return 0;
 
 	if (!src_buf || !dest_buf || src_len <= 0 || dest_len <= 0) {
-		pr_err("diag: Invalid input in %s, src_buf: %p, src_len: %d, dest_buf: %p, dest_len: %d",
+		pr_err("diag: Invalid input in %s, src_buf: %pK, src_len: %d, dest_buf: %pK, dest_len: %d",
 		       __func__, src_buf, src_len, dest_buf, dest_len);
 		return -EINVAL;
 	}
@@ -1356,8 +1355,7 @@ void diag_process_hdlc(void *data, unsigned len)
 
 	mutex_lock(&driver->diag_hdlc_mutex);
 /*++ 2014/09/18, USB Team, PCN00002 ++*/
-	if (diag7k_debug_mask)
-		DIAG_INFO("HDLC decode fn, len of data  %d\n", len);
+	DIAGFWD_DBUG("HDLC decode fn, len of data  %d\n", len);
 /*-- 2014/09/18, USB Team, PCN00002 --*/
 	hdlc.dest_ptr = driver->hdlc_buf;
 	hdlc.dest_size = USB_MAX_OUT_BUF;
@@ -1446,8 +1444,8 @@ void diag_process_hdlc(void *data, unsigned len)
 		}
 		APPEND_DEBUG('h');
 /*++ 2014/09/18, USB Team, PCN00002 ++*/
+		DIAGFWD_DBUG("writing data to SMD, pkt length %d\n", len);
 		if (diag7k_debug_mask) {
-			printk(KERN_INFO "writing data to SMD, pkt length %d\n", len);
 			print_hex_dump(KERN_INFO, "Written Packet Data to SMD: ", 16,
 			       1, DUMP_PREFIX_ADDRESS, data, len, 1);
 		}
@@ -1688,6 +1686,10 @@ static struct diag_mux_ops diagfwd_mux_ops = {
 void diag_smd_notify(void *ctxt, unsigned event)
 {
 	struct diag_smd_info *smd_info = (struct diag_smd_info *)ctxt;
+
+	DIAGFWD_DBUG("%s: event:%u type=%d peripheral=%d \n", __func__, event,
+					smd_info->type, smd_info->peripheral);
+
 	if (!smd_info)
 		return;
 
@@ -2162,13 +2164,15 @@ int diag_smd_write(struct diag_smd_info *smd_info, void *buf, int len)
 	int max_retries = 3;
 
 	if (!smd_info || !buf || len <= 0) {
-		pr_err_ratelimited("diag: In %s, invalid params, smd_info: %p, buf: %p, len: %d\n",
+		pr_err_ratelimited("diag: In %s, invalid params, smd_info: %pK, buf: %pK, len: %d\n",
 				   __func__, smd_info, buf, len);
 		return -EINVAL;
 	}
 
 	if (!smd_info->ch)
 		return -ENODEV;
+
+	DIAGFWD_DBUG("%s: smd_info: %p, buf: %p, len: %d \n", __func__ , smd_info, buf, len);
 
 	do {
 		mutex_lock(&smd_info->smd_ch_mutex);

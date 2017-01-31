@@ -67,6 +67,7 @@ static int notify_modem_app_reboot_call(struct notifier_block *this,
 
 	switch (code) {
 		case SYS_RESTART:
+		case SYS_POWER_OFF:
 			if(_cmd && !strncmp(_cmd, "oem-", 4)) {
 				oem_code = simple_strtoul(_cmd + 4, 0, 16) & 0xff;
 				set_oem_reboot_reason(oem_code);
@@ -89,6 +90,9 @@ static int modem_notifier_cb(struct notifier_block *this,
 		case SUBSYS_AFTER_POWERUP:
 			modem_is_load = 1;
 			break;
+                case SUBSYS_AFTER_SHUTDOWN:
+                        modem_is_load = 0;
+                        break;
 		default:
 			break;
 	}
